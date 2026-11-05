@@ -1,0 +1,12 @@
+{
+  "name": "@tm/core",
+  "version": "0.1.0",
+  "description": "Logic lõi dùng chung cho web và mobile: geofence, hàng chờ phát, tuyến tham quan",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./data/*": "./data/*"
+  },
+  "scripts": { "test": "node --test" }
+}

@@ -1,0 +1,12 @@
+# Bí mật: KHÔNG BAO GIỜ commit
+.env
+.env.*
+!.env.example
+
+# Phụ thuộc và build
+node_modules/
+dist/
+.vercel/
+*.zip
+*.log
+.DS_Store

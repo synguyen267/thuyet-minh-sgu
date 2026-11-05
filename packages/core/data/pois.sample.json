@@ -1,0 +1,176 @@
+{
+  "version": 1,
+  "note": "Tọa độ để trống: dùng tab Đo tọa độ trong apps/web để đo tại chỗ rồi dán vào đây. Nội dung thuyết minh là bản tạm.",
+  "pois": [
+    {
+      "id": "cong-chinh",
+      "tour_order": 1,
+      "name": {
+        "vi": "Cổng chính (273 An Dương Vương)",
+        "en": "Main Gate (273 An Duong Vuong)"
+      },
+      "lat": null,
+      "lng": null,
+      "radius_m": 15,
+      "priority": 2,
+      "is_active": true,
+      "tts": {
+        "vi": "Bạn đang ở Cổng chính (273 An Dương Vương), một địa điểm trong Trường Đại học Sài Gòn. Nội dung giới thiệu chi tiết sẽ được bổ sung.",
+        "en": "You are at Main Gate (273 An Duong Vuong), a location at Saigon University. Detailed narration will be added later."
+      }
+    },
+    {
+      "id": "khu-hb",
+      "tour_order": 2,
+      "name": {
+        "vi": "Khu HB (Hiệu Bộ)",
+        "en": "HB Building (Administration)"
+      },
+      "lat": null,
+      "lng": null,
+      "radius_m": 15,
+      "priority": 1,
+      "is_active": true,
+      "tts": {
+        "vi": "Bạn đang ở Khu HB (Hiệu Bộ), một địa điểm trong Trường Đại học Sài Gòn. Nội dung giới thiệu chi tiết sẽ được bổ sung.",
+        "en": "You are at HB Building (Administration), a location at Saigon University. Detailed narration will be added later."
+      }
+    },
+    {
+      "id": "khu-d",
+      "tour_order": 3,
+      "name": {
+        "vi": "Khu D",
+        "en": "Building D"
+      },
+      "lat": null,
+      "lng": null,
+      "radius_m": 20,
+      "priority": 1,
+      "is_active": true,
+      "tts": {
+        "vi": "Bạn đang ở Khu D, một địa điểm trong Trường Đại học Sài Gòn. Nội dung giới thiệu chi tiết sẽ được bổ sung.",
+        "en": "You are at Building D, a location at Saigon University. Detailed narration will be added later."
+      }
+    },
+    {
+      "id": "khu-c",
+      "tour_order": 4,
+      "name": {
+        "vi": "Khu C",
+        "en": "Building C"
+      },
+      "lat": null,
+      "lng": null,
+      "radius_m": 25,
+      "priority": 1,
+      "is_active": true,
+      "tts": {
+        "vi": "Bạn đang ở Khu C, một địa điểm trong Trường Đại học Sài Gòn. Nội dung giới thiệu chi tiết sẽ được bổ sung.",
+        "en": "You are at Building C, a location at Saigon University. Detailed narration will be added later."
+      }
+    },
+    {
+      "id": "can-tin",
+      "tour_order": 5,
+      "name": {
+        "vi": "Căn tin",
+        "en": "Canteen"
+      },
+      "lat": null,
+      "lng": null,
+      "radius_m": 20,
+      "priority": 1,
+      "is_active": true,
+      "tts": {
+        "vi": "Bạn đang ở Căn tin, một địa điểm trong Trường Đại học Sài Gòn. Nội dung giới thiệu chi tiết sẽ được bổ sung.",
+        "en": "You are at Canteen, a location at Saigon University. Detailed narration will be added later."
+      }
+    },
+    {
+      "id": "khu-b",
+      "tour_order": 6,
+      "name": {
+        "vi": "Khu B",
+        "en": "Building B"
+      },
+      "lat": null,
+      "lng": null,
+      "radius_m": 25,
+      "priority": 1,
+      "is_active": true,
+      "tts": {
+        "vi": "Bạn đang ở Khu B, một địa điểm trong Trường Đại học Sài Gòn. Nội dung giới thiệu chi tiết sẽ được bổ sung.",
+        "en": "You are at Building B, a location at Saigon University. Detailed narration will be added later."
+      }
+    },
+    {
+      "id": "khu-a",
+      "tour_order": 7,
+      "name": {
+        "vi": "Khu A",
+        "en": "Building A"
+      },
+      "lat": null,
+      "lng": null,
+      "radius_m": 30,
+      "priority": 1,
+      "is_active": true,
+      "tts": {
+        "vi": "Bạn đang ở Khu A, một địa điểm trong Trường Đại học Sài Gòn. Nội dung giới thiệu chi tiết sẽ được bổ sung.",
+        "en": "You are at Building A, a location at Saigon University. Detailed narration will be added later."
+      }
+    },
+    {
+      "id": "cong-sau",
+      "tour_order": 8,
+      "name": {
+        "vi": "Cổng sau (số 6 Nguyễn Trãi)",
+        "en": "Back Gate (6 Nguyen Trai Street)"
+      },
+      "lat": null,
+      "lng": null,
+      "radius_m": 15,
+      "priority": 2,
+      "is_active": true,
+      "tts": {
+        "vi": "Bạn đang ở Cổng sau (số 6 Nguyễn Trãi), một địa điểm trong Trường Đại học Sài Gòn. Nội dung giới thiệu chi tiết sẽ được bổ sung.",
+        "en": "You are at Back Gate (6 Nguyen Trai Street), a location at Saigon University. Detailed narration will be added later."
+      }
+    },
+    {
+      "id": "khu-e",
+      "tour_order": 9,
+      "name": {
+        "vi": "Khu E",
+        "en": "Building E"
+      },
+      "lat": null,
+      "lng": null,
+      "radius_m": 15,
+      "priority": 1,
+      "is_active": true,
+      "tts": {
+        "vi": "Bạn đang ở Khu E, một địa điểm trong Trường Đại học Sài Gòn. Nội dung giới thiệu chi tiết sẽ được bổ sung.",
+        "en": "You are at Building E, a location at Saigon University. Detailed narration will be added later."
+      }
+    },
+    {
+      "id": "san-bong",
+      "tour_order": 10,
+      "name": {
+        "vi": "Sân bóng",
+        "en": "Sports Fields"
+      },
+      "lat": null,
+      "lng": null,
+      "radius_m": 30,
+      "priority": 1,
+      "is_active": true,
+      "tts": {
+        "vi": "Bạn đang ở Sân bóng, một địa điểm trong Trường Đại học Sài Gòn. Nội dung giới thiệu chi tiết sẽ được bổ sung.",
+        "en": "You are at Sports Fields, a location at Saigon University. Detailed narration will be added later."
+      }
+    }
+  ]
+}
