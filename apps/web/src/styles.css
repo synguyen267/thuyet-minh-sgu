@@ -159,7 +159,7 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .settings { margin-top: 24px; }
 
 /* ===== Quản trị ===== */
-.login { max-width: 420px; }
+.page.login { max-width: 420px; margin: 32px auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
 .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .chip { font: inherit; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
 .chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
@@ -168,3 +168,35 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .stat span { color: var(--ink-soft); font-size: 0.85rem; }
 .stat strong { font-size: 1.8rem; font-variant-numeric: tabular-nums; }
 @media (min-width: 560px) { .home-hero h1 { font-size: 2.4rem; } .bento { grid-template-columns: repeat(2, 1fr); } .map { height: 380px; } }
+
+/* ===== Màn hình rộng (laptop): dùng hết chiều ngang, điện thoại giữ nguyên ===== */
+@media (min-width: 900px) {
+  .app { max-width: 1200px; padding-left: 40px; padding-right: 40px; padding-bottom: 56px; }
+  .top { padding: 28px 0 16px; }
+  .top h1 { font-size: 1.6rem; }
+
+  /* Trang khách */
+  .tour-top { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; padding: 24px 0 12px; }
+  .tour-top h1 { margin: 0; flex: 1; font-size: 1.6rem; }
+  .tour-top .back { order: -1; }
+  .tour-top .note { flex-basis: 100%; margin: 0; }
+  .lang-pick { flex-direction: row; align-items: center; gap: 10px; }
+  .lang-pick select { width: auto; min-width: 180px; }
+  .tour-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(340px, 1fr); gap: 32px; align-items: start; }
+  .tour-grid .map { height: 480px; margin-top: 0; }
+  .tour-side .stops-title { margin-top: 0; }
+  .qr-card { max-width: 640px; }
+
+  /* Trang chủ */
+  .home-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 56px; align-items: center; }
+  .home-hero { padding: 72px 0 48px; }
+  .home-hero h1 { font-size: 3.2rem; }
+  .home-hero p { font-size: 1.15rem; }
+
+  /* Quản trị: thanh tab nằm ngang ở trên, nội dung rộng vừa phải và sát lề trái */
+  .admin .tabs { position: static; display: flex; gap: 4px; border: 1px solid var(--line); border-radius: 12px; padding: 4px; margin: 4px 0 20px; background: var(--surface); }
+  .admin .tabs button { flex: 0 0 auto; min-width: 130px; min-height: 44px; padding: 0 20px; border-top: 0; border-radius: 8px; }
+  .admin .tabs button.on { background: var(--accent); color: var(--accent-ink); }
+  .admin .page { max-width: 780px; }
+  .admin .readout { max-width: 780px; }
+}

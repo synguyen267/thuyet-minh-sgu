@@ -87,8 +87,13 @@ export default function Admin({ navigate }) {
 
   const needGps = tab === 'measure' || tab === 'geofence';
   return (
-    <div className="app">
+    <div className="app admin">
       {head}
+      <nav className="tabs" style={{ '--n': tabs.length }} aria-label="Chức năng quản trị">
+        {tabs.map(([id, label]) => (
+          <button key={id} className={tab === id ? 'on' : ''} aria-current={tab === id ? 'page' : undefined} onClick={() => setTab(id)}>{label}</button>
+        ))}
+      </nav>
       {!hasSupabase && <p className="note warn">Chưa cấu hình Supabase: các công cụ dưới đây chạy ở chế độ cục bộ (lưu trên máy này).</p>}
       {hasSupabase && db.source !== 'supabase' && !db.loading && <p className="note warn">Đang dùng dữ liệu mẫu ({db.error}). Chưa lưu được vào CSDL.</p>}
       {needGps && <Readout gps={gps} on={gpsOn} onStart={() => setGpsOn(true)} />}
@@ -99,11 +104,6 @@ export default function Admin({ navigate }) {
         {tab === 'voices' && <Voices />}
         {tab === 'stats' && <Stats pois={db.pois} />}
       </main>
-      <nav className="tabs" style={{ '--n': tabs.length }} aria-label="Chức năng quản trị">
-        {tabs.map(([id, label]) => (
-          <button key={id} className={tab === id ? 'on' : ''} aria-current={tab === id ? 'page' : undefined} onClick={() => setTab(id)}>{label}</button>
-        ))}
-      </nav>
     </div>
   );
 }

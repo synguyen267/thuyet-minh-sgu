@@ -127,6 +127,8 @@ export default function Tour({ search, navigate }) {
         </section>
       )}
 
+      <div className="tour-grid">
+      <div className="tour-main">
       <MapView pois={withCoords} pos={livePos} selectedId={engine.current?.id ?? selId ?? qrPoi?.id} scale={settings.scale} lang={lang} onSelect={(id) => listen(id, 'manual')} />
       {!loading && withCoords.length === 0 && <p className="note">Các điểm chưa có tọa độ nên bản đồ chưa hiện điểm. Bạn vẫn nghe được bằng nút Nghe.</p>}
 
@@ -172,6 +174,8 @@ export default function Tour({ search, navigate }) {
       )}
       {running && !next && pois.length > 0 && <p className="next">Bạn đã nghe hết các điểm trên tuyến.</p>}
 
+      </div>
+      <aside className="tour-side">
       <h2 className="stops-title">Tuyến tham quan</h2>
       {loading ? <p className="note">Đang tải…</p> : (
         <ol className="stops">
@@ -217,6 +221,8 @@ export default function Tour({ search, navigate }) {
           </label>
         )}
       </details>
+      </aside>
+      </div>
     </div>
   );
 }

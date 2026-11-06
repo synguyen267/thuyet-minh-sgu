@@ -3,6 +3,7 @@ import { Link } from '../router.jsx';
 export default function Home({ navigate }) {
   return (
     <div className="app home">
+      <div className="home-grid">
       <header className="home-hero">
         <h1>Đi tới đâu, nghe tới đó</h1>
         <p>Dạo quanh Đại học Sài Gòn (cơ sở An Dương Vương) cùng một người bạn kể chuyện. Điện thoại của bạn tự thuyết minh khi bạn đi tới gần từng khu.</p>
@@ -26,6 +27,8 @@ export default function Home({ navigate }) {
           <h2>Không cần tài khoản</h2>
           <p>Mở trang là dùng được. Vị trí chỉ được ghi ẩn danh khi bạn đồng ý, để nhóm cải thiện tuyến tham quan.</p>
         </section>
+      </div>
+
       </div>
 
       <footer className="home-foot">
