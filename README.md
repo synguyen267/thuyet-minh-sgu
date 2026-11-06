@@ -12,9 +12,13 @@ packages/core/   Logic lõi dùng chung cho web và mobile (không phụ thuộc
   src/           geo (khoảng cách, lọc, gộp mẫu GPS), geofence, narration (hàng chờ, chống lặp, gián đoạn), tour
   test/          Unit test (node:test), chạy trên CI
   data/          pois.sample.json: 10 điểm theo tuyến tham quan (tọa độ chưa đo)
+supabase/        SQL tạo bảng + RLS (migrations/), dữ liệu 10 điểm (seed.sql), hướng dẫn cài đặt
+scripts/         gen-seed.mjs: sinh seed.sql từ pois.sample.json (npm run db:seed)
 apps/web/        Trang PoC bằng React + Vite: đo tọa độ, thử vùng thuyết minh, thử giọng đọc
 .github/         CI: chạy test và build mỗi lần push hoặc Pull Request
 ```
+
+Cơ sở dữ liệu: xem `supabase/README.md` (SQL tạo bảng, bảo mật RLS, dữ liệu 10 điểm).
 
 Sau này thêm vào cùng repo: `apps/api` (backend 3 lớp), `services/*` (Content/POI, AI, Analytics), `apps/mobile` (React Native).
 

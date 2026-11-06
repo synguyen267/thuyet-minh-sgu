@@ -3,11 +3,17 @@
   "private": true,
   "version": "0.1.0",
   "description": "Web thuyết minh tự động đa ngôn ngữ cho khuôn viên Đại học Sài Gòn (GPS + QR)",
-  "workspaces": ["packages/*", "apps/*"],
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
     "dev": "npm run dev -w @tm/web",
     "build": "npm run build -w @tm/web",
-    "test": "npm test -w @tm/core"
+    "test": "npm test -w @tm/core",
+    "db:seed": "node scripts/gen-seed.mjs"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  }
 }
