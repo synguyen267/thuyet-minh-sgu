@@ -109,3 +109,62 @@ code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.85em;
 
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* ===== Trang khách: chủ, tham quan ===== */
+.tabs { grid-template-columns: repeat(var(--n, 3), 1fr); }
+.top a, .back, .link { color: var(--accent); }
+.linkbtn { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
+input { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; width: 100%; min-height: 48px; }
+textarea { min-height: 120px; }
+.check { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0; color: var(--ink-soft); font-size: 0.9rem; }
+.check input { width: 22px; min-height: 22px; margin-top: 2px; flex: none; }
+a.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.btn.big { min-height: 56px; padding: 0 28px; font-size: 1.05rem; }
+.btn.small { min-height: 40px; padding: 0 14px; }
+
+.home-hero { padding: 40px 0 24px; }
+.home-hero h1 { margin: 0 0 12px; font-size: 2rem; line-height: 1.15; letter-spacing: -0.02em; }
+.home-hero p { margin: 0 0 24px; color: var(--ink-soft); max-width: 52ch; font-size: 1.05rem; }
+.bento { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+.tile.wide { grid-column: 1 / -1; }
+.tile h2 { margin: 0 0 6px; font-size: 1.05rem; }
+.tile p { margin: 0; color: var(--ink-soft); font-size: 0.95rem; }
+.home-foot { padding: 28px 0 8px; font-size: 0.9rem; }
+.home-foot a { color: var(--ink-soft); }
+
+.tour { padding-bottom: 40px; }
+.tour-top { padding: 16px 0 8px; }
+.tour-top h1 { margin: 6px 0 12px; font-size: 1.4rem; line-height: 1.2; }
+.lang-pick { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; color: var(--ink-soft); }
+.map { height: 300px; border-radius: 12px; border: 1px solid var(--line); margin: 12px 0; z-index: 0; }
+.poi-pin span { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #5b6b75; color: #fff; font-weight: 700; font-size: 0.8rem; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); }
+.poi-pin.sel span { background: var(--accent); }
+.qr-card, .now { background: var(--surface); border: 1px solid var(--line); border-left: 6px solid var(--accent); border-radius: 12px; padding: 16px; margin: 12px 0; }
+.qr-lead, .now-label { margin: 0; color: var(--ink-soft); font-size: 0.85rem; }
+.qr-card h2, .now h2 { margin: 2px 0 12px; font-size: 1.3rem; }
+.qr-card .link { display: inline-block; margin-top: 12px; }
+.now-text { margin: 0 0 12px; line-height: 1.6; }
+.start { margin: 12px 0; }
+.next { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 12px 0; }
+.stops-title { margin: 24px 0 8px; font-size: 1.1rem; }
+.stops { list-style: none; margin: 0; padding: 0; }
+.stop { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+.stop.visited { opacity: 0.7; }
+.stop.playing { border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent); opacity: 1; }
+.stop-n { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--bg); font-weight: 700; font-variant-numeric: tabular-nums; }
+.stop-body { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.stop-name { font-weight: 600; }
+.stop-meta { font-size: 0.85rem; color: var(--ink-soft); }
+.settings { margin-top: 24px; }
+
+/* ===== Quản trị ===== */
+.login { max-width: 420px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.chip { font: inherit; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.stats-cards { margin: 12px 0; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; }
+.stat span { color: var(--ink-soft); font-size: 0.85rem; }
+.stat strong { font-size: 1.8rem; font-variant-numeric: tabular-nums; }
+@media (min-width: 560px) { .home-hero h1 { font-size: 2.4rem; } .bento { grid-template-columns: repeat(2, 1fr); } .map { height: 380px; } }

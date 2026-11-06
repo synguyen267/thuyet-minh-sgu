@@ -1,0 +1,36 @@
+import { Link } from '../router.jsx';
+
+export default function Home({ navigate }) {
+  return (
+    <div className="app home">
+      <header className="home-hero">
+        <h1>Đi tới đâu, nghe tới đó</h1>
+        <p>Dạo quanh Đại học Sài Gòn (cơ sở An Dương Vương) cùng một người bạn kể chuyện. Điện thoại của bạn tự thuyết minh khi bạn đi tới gần từng khu.</p>
+        <Link to="/tour" navigate={navigate} className="btn primary big">Bắt đầu tham quan</Link>
+      </header>
+
+      <div className="bento">
+        <section className="tile wide">
+          <h2>Tuyến tham quan 10 điểm</h2>
+          <p>Từ Cổng chính qua khu HB, D, C, căn tin, B, A, cổng sau, khu E, rồi tới sân bóng. Bạn có thể đi theo thứ tự hoặc đi tới đâu nghe tới đó.</p>
+        </section>
+        <section className="tile">
+          <h2>5 ngôn ngữ</h2>
+          <p>Tiếng Việt, English, 中文, 日本語, 한국어.</p>
+        </section>
+        <section className="tile">
+          <h2>Quét mã QR</h2>
+          <p>Thấy mã QR tại khu nào, quét là nghe ngay, không cần bật GPS.</p>
+        </section>
+        <section className="tile wide">
+          <h2>Không cần tài khoản</h2>
+          <p>Mở trang là dùng được. Vị trí chỉ được ghi ẩn danh khi bạn đồng ý, để nhóm cải thiện tuyến tham quan.</p>
+        </section>
+      </div>
+
+      <footer className="home-foot">
+        <Link to="/admin" navigate={navigate}>Dành cho quản trị viên</Link>
+      </footer>
+    </div>
+  );
+}

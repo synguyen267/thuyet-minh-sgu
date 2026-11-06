@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { NarrationController, findCandidates, distancesTo } from '@tm/core';
+import { NarrationController, findCandidates, distancesTo, poiName } from '@tm/core';
 import { speak, stopSpeaking, unlockSpeech, getSavedVoice, speechSupported } from '../speech.js';
 
 const SCALES = [0.5, 1, 1.5, 2];
@@ -15,14 +15,14 @@ export default function Geofence({ gps, store }) {
   const [interrupted, setInterrupted] = useState(false);
   const [log, setLog] = useState([]);
 
-  const measured = useMemo(() => pois.filter((p) => p.lat !== null), [pois]);
+  const measured = useMemo(() => pois.filter((p) => p.lat != null), [pois]);
   const byId = useMemo(() => Object.fromEntries(pois.map((p) => [p.id, p])), [pois]);
   const ctl = useMemo(() => new NarrationController({ cooldownMs: cooldownMin * 60000 }), [cooldownMin]);
 
   const pos = useMemo(() => {
     if (simId) {
       const p = byId[simId];
-      return p && p.lat !== null ? { lat: p.lat, lng: p.lng, accuracy: 5 } : null;
+      return p && p.lat != null ? { lat: p.lat, lng: p.lng, accuracy: 5 } : null;
     }
     return gps.pos;
   }, [simId, byId, gps.pos]);
@@ -37,7 +37,7 @@ export default function Geofence({ gps, store }) {
     const { lang: l, byId: map, ctl: c } = latest.current;
     const poi = map[id];
     const text = poi.tts?.[l] || poi.tts?.vi;
-    addLog(`Đọc: ${poi.name.vi}`);
+    addLog(`Đọc: ${poiName(poi)}`);
     speak(text, {
       code: poi.tts?.[l] ? l : 'vi',
       voiceURI: getSavedVoice(l),
@@ -63,7 +63,7 @@ export default function Geofence({ gps, store }) {
     prevSel.current = selId;
     if (selId) {
       const c = candidates[0];
-      addLog(`Vào vùng ${c.poi.name.vi} (cách ${Math.round(c.distance)} m)`);
+      addLog(`Vào vùng ${c.poiName(poi)} (cách ${Math.round(c.distance)} m)`);
       if (running) handle(ctl.request(selId, { source: 'gps' }));
     } else if (was) {
       addLog('Ra khỏi vùng');
@@ -134,7 +134,7 @@ export default function Geofence({ gps, store }) {
         <span>Giả lập đứng tại</span>
         <select value={simId} onChange={(e) => setSimId(e.target.value)}>
           <option value="">Vị trí GPS thật</option>
-          {measured.map((p) => <option key={p.id} value={p.id}>{p.name.vi}</option>)}
+          {measured.map((p) => <option key={p.id} value={p.id}>{poiName(p)}</option>)}
         </select>
       </label>
 
@@ -188,7 +188,7 @@ export default function Geofence({ gps, store }) {
           {list.map(({ poi, distance }) => (
             <li key={poi.id} className={poi.id === selId ? 'sel' : ''}>
               <div className="poi-row static">
-                <span className="poi-name">{poi.name.vi}</span>
+                <span className="poi-name">{poiName(poi)}</span>
                 <span className="poi-meta">
                   {Math.round(distance)} m · bán kính {Math.round((poi.radius_m ?? 20) * scale)} m
                   {inRange.has(poi.id) ? ' · trong vùng' : ''}

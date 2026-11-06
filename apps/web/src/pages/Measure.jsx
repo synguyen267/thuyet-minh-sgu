@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { averageFixes } from '@tm/core';
+import { averageFixes, poiName } from '@tm/core';
 
 const SECONDS = 10;
 
@@ -29,13 +29,14 @@ export default function Measure({ gps, store }) {
       if (remain <= 0) {
         clearInterval(iv);
         const fix = averageFixes(samples.current);
+        setRunning(false);
         if (fix) {
-          store.save(selected, fix);
-          setMsg(`Đã lưu từ ${fix.samples} mẫu, sai số khoảng ±${fix.accuracy_m} m.`);
+          Promise.resolve(store.save(selected, fix))
+            .then(() => setMsg(`Đã lưu từ ${fix.samples} mẫu, sai số khoảng ±${fix.accuracy_m} m.`))
+            .catch((e) => setMsg(`Không lưu được: ${e.message}`));
         } else {
           setMsg('Chưa nhận được vị trí nào. Hãy thử lại ở chỗ thoáng.');
         }
-        setRunning(false);
       }
     }, 250);
     return () => clearInterval(iv);
@@ -62,7 +63,7 @@ export default function Measure({ gps, store }) {
 
   const current = pois.find((p) => p.id === selected);
   const ready = gps.status === 'ok' && gps.pos;
-  const done = pois.filter((p) => p.measured).length;
+  const done = pois.filter((p) => p.lat != null).length;
 
   return (
     <div className="page">
@@ -74,14 +75,14 @@ export default function Measure({ gps, store }) {
         <select value={selected} onChange={(e) => setSelected(e.target.value)} disabled={running}>
           {pois.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.tour_order}. {p.name.vi}{p.measured ? ' (đã đo)' : ''}
+              {p.tour_order}. {poiName(p)}{p.lat != null ? ' (đã đo)' : ''}
             </option>
           ))}
         </select>
       </label>
 
       <button className="btn primary block" onClick={start} disabled={!ready || running}>
-        {running ? `Đang đo… còn ${left} giây (${count} mẫu)` : `Đo vị trí cho ${current.name.vi}`}
+        {running ? `Đang đo… còn ${left} giây (${count} mẫu)` : `Đo vị trí cho ${poiName(current)}`}
       </button>
       {!ready && <p className="note">Bật GPS ở phía trên trước khi đo.</p>}
       {msg && <p className="note ok" role="status">{msg}</p>}
@@ -91,16 +92,16 @@ export default function Measure({ gps, store }) {
         {pois.map((p) => (
           <li key={p.id} className={p.id === selected ? 'sel' : ''}>
             <button className="poi-row" onClick={() => !running && setSelected(p.id)}>
-              <span className="poi-name">{p.tour_order}. {p.name.vi}</span>
-              {p.measured ? (
+              <span className="poi-name">{p.tour_order}. {poiName(p)}</span>
+              {p.lat != null ? (
                 <span className="poi-meta done">
-                  {p.lat.toFixed(6)}, {p.lng.toFixed(6)} (±{p.measured.accuracy_m} m)
+                  {Number(p.lat).toFixed(6)}, {Number(p.lng).toFixed(6)}{p.measured ? ` (±${p.measured.accuracy_m} m)` : ''}
                 </span>
               ) : (
                 <span className="poi-meta">Chưa đo</span>
               )}
             </button>
-            {p.measured && (
+            {p.lat != null && (
               <a className="link" href={`https://www.google.com/maps?q=${p.lat},${p.lng}`} target="_blank" rel="noreferrer">
                 Xem trên bản đồ
               </a>
@@ -115,9 +116,11 @@ export default function Measure({ gps, store }) {
         <textarea readOnly rows={10} value={store.exportJson()} onFocus={(e) => e.target.select()} />
         <div className="row">
           <button className="btn" onClick={copy}>{copied ? 'Đã sao chép' : 'Sao chép JSON'}</button>
-          <button className="btn danger" onClick={() => window.confirm('Xóa toàn bộ tọa độ đã đo trên máy này?') && store.clear()}>
-            Xóa các lần đo
-          </button>
+          {store.clear && (
+            <button className="btn danger" onClick={() => window.confirm('Xóa toàn bộ tọa độ đã đo trên máy này?') && store.clear()}>
+              Xóa các lần đo
+            </button>
+          )}
         </div>
       </details>
     </div>

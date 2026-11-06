@@ -14,13 +14,35 @@ packages/core/   Logic lõi dùng chung cho web và mobile (không phụ thuộc
   data/          pois.sample.json: 10 điểm theo tuyến tham quan (tọa độ chưa đo)
 supabase/        SQL tạo bảng + RLS (migrations/), dữ liệu 10 điểm (seed.sql), hướng dẫn cài đặt
 scripts/         gen-seed.mjs: sinh seed.sql từ pois.sample.json (npm run db:seed)
-apps/web/        Trang PoC bằng React + Vite: đo tọa độ, thử vùng thuyết minh, thử giọng đọc
+apps/web/        Web React + Vite: trang chủ, trang tham quan cho khách, khu quản trị
 .github/         CI: chạy test và build mỗi lần push hoặc Pull Request
 ```
 
 Cơ sở dữ liệu: xem `supabase/README.md` (SQL tạo bảng, bảo mật RLS, dữ liệu 10 điểm).
 
 Sau này thêm vào cùng repo: `apps/api` (backend 3 lớp), `services/*` (Content/POI, AI, Analytics), `apps/mobile` (React Native).
+
+## Các trang
+
+| Đường dẫn | Ai dùng | Làm gì |
+|---|---|---|
+| `/` | Mọi người | Giới thiệu, nút Bắt đầu tham quan |
+| `/tour` | Mọi người, **không cần tài khoản** | Bản đồ, tuyến 10 điểm, tự thuyết minh theo GPS, nút Nghe từng điểm |
+| `/tour?poi=khu-a` | Mọi người | Đường dẫn trong mã QR: quét là nghe ngay, không cần GPS |
+| `/admin` | Chỉ quản trị viên (đăng nhập) | Sửa điểm và bản dịch, đo tọa độ (lưu thẳng vào CSDL), thử vùng, giọng đọc, thống kê |
+
+Dữ liệu đọc từ Supabase. Nếu chưa cấu hình hoặc CSDL lỗi, trang tự dùng dữ liệu mẫu trong `pois.sample.json`.
+
+### Biến môi trường (apps/web)
+
+Sao chép `.env.example` thành `.env` ở thư mục gốc rồi điền (trên Vercel: Settings, Environment Variables):
+
+```
+VITE_SUPABASE_URL=https://xxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=khóa publishable hoặc anon public
+```
+
+Không bao giờ đưa khóa `service_role` hoặc `secret` vào đây.
 
 ## Chạy thử
 
@@ -38,12 +60,20 @@ npm run build     # build ra apps/web/dist
 
 ## Deploy lên Vercel
 
+(`apps/web/vercel.json` đã cấu hình để các đường dẫn như `/tour` và `/admin` hoạt động khi tải lại trang.)
+
+
 1. Đẩy repo lên GitHub, vào Vercel chọn Add New Project, chọn repo.
 2. Root Directory: `apps/web` (giữ bật "Include source files outside of the Root Directory").
 3. Framework: Vite. Build Command: `npm run build`. Output Directory: `dist`. Install Command: `npm install`.
 4. Mỗi Pull Request sẽ có bản xem thử riêng. Merge vào `main` là tự cập nhật bản chạy thật.
 
-## Việc đầu tiên: đo tọa độ 10 điểm
+## Việc đầu tiên: đo tọa độ 10 điểm (cách mới, lưu thẳng vào CSDL)
+
+Vào `/admin` trên điện thoại, đăng nhập, mở tab **Đo tọa độ**: mỗi lần đo xong, tọa độ được lưu vào Supabase ngay,
+cả nhóm thấy ngay, không cần sao chép JSON. Các bước dưới đây vẫn đúng, chỉ bỏ bước "dán vào file".
+
+### Cách cũ (cục bộ, khi chưa có Supabase)
 
 1. Mở trang PoC trên điện thoại, bấm Bật GPS, cho phép vị trí.
 2. Tab Đo tọa độ: đứng giữa từng địa điểm (khu B và khu C thì đứng giữa lối đi), chọn điểm, bấm đo, giữ máy yên 10 giây.
