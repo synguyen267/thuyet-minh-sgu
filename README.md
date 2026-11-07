@@ -29,7 +29,7 @@ Sau này thêm vào cùng repo: `apps/api` (backend 3 lớp), `services/*` (Cont
 | `/` | Mọi người | Giới thiệu, nút Bắt đầu tham quan |
 | `/tour` | Mọi người, **không cần tài khoản** | Bản đồ, tuyến 10 điểm, tự thuyết minh theo GPS, nút Nghe từng điểm |
 | `/tour?poi=khu-a` | Mọi người | Đường dẫn trong mã QR: quét là nghe ngay, không cần GPS |
-| `/admin` | Chỉ quản trị viên (đăng nhập) | Sửa điểm và bản dịch, đo tọa độ (lưu thẳng vào CSDL), thử vùng, giọng đọc, thống kê |
+| `/admin` | Chỉ quản trị viên (đăng nhập) | Sửa điểm và bản dịch, đo tọa độ (lưu thẳng vào CSDL), thử vùng, giọng đọc, tạo và in mã QR, thống kê |
 
 Dữ liệu đọc từ Supabase. Nếu chưa cấu hình hoặc CSDL lỗi, trang tự dùng dữ liệu mẫu trong `pois.sample.json`.
 

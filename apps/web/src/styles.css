@@ -103,15 +103,15 @@ details { margin-top: 24px; }
 summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
 code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.85em; }
 
-.tabs { position: fixed; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(3, 1fr); background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0); }
-.tabs button { font: inherit; font-weight: 500; color: var(--ink-soft); background: none; border: 0; min-height: 60px; cursor: pointer; border-top: 3px solid transparent; }
+.tabs { position: fixed; left: 0; right: 0; bottom: 0; display: flex; overflow-x: auto; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0); }
+.tabs button { flex: 1 0 auto; min-width: 82px; padding: 0 10px; font: inherit; font-weight: 500; color: var(--ink-soft); background: none; border: 0; min-height: 60px; cursor: pointer; border-top: 3px solid transparent; }
 .tabs button.on { color: var(--accent); font-weight: 700; border-top-color: var(--accent); }
 
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
 /* ===== Trang khách: chủ, tham quan ===== */
-.tabs { grid-template-columns: repeat(var(--n, 3), 1fr); }
+
 .top a, .back, .link { color: var(--accent); }
 .linkbtn { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
 input { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; width: 100%; min-height: 48px; }
@@ -206,3 +206,18 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .zone-row { display: grid; grid-template-columns: 1fr 1fr 90px auto; gap: 8px; align-items: end; margin-bottom: 8px; }
 .zone-row .field { margin-bottom: 0; }
 @media (max-width: 560px) { .zone-row { grid-template-columns: 1fr 1fr; } .zone-row .btn { grid-column: 1 / -1; } }
+
+/* ===== Mã QR ===== */
+.qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 16px; }
+.qr-item { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.qr-item img { background: #fff; border-radius: 6px; max-width: 100%; height: auto; }
+.qr-ph { width: 200px; height: 200px; background: var(--bg); border-radius: 6px; }
+.qr-item figcaption { display: flex; flex-direction: column; gap: 2px; }
+.qr-url { font-size: 0.7rem; color: var(--ink-soft); word-break: break-all; }
+@media print {
+  body { background: #fff; color: #000; }
+  .no-print { display: none !important; }
+  .app { max-width: none; padding: 0; }
+  .qr-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .qr-item { break-inside: avoid; border-color: #999; }
+}

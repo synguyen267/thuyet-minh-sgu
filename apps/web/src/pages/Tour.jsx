@@ -5,6 +5,7 @@ import { useGeolocation } from '../hooks/useGeolocation.js';
 import { usePoiData } from '../hooks/usePoiData.js';
 import { useSettings } from '../hooks/useSettings.js';
 import { useVoices } from '../hooks/useVoices.js';
+import { useWakeLock } from '../hooks/useWakeLock.js';
 import { useNarrationEngine } from '../hooks/useNarrationEngine.js';
 import { LANGS, getSavedVoice, saveVoice, unlockSpeech, voicesFor } from '../speech.js';
 import { logTrack } from '../data/repo.js';
@@ -27,6 +28,7 @@ export default function Tour({ search, navigate }) {
   const [running, setRunning] = useState(false);
   const [share, setShare] = useState(true);
   const gps = useGeolocation(running);
+  useWakeLock(running);
   const voices = useVoices();
   const { lang } = settings;
 
@@ -148,6 +150,7 @@ export default function Tour({ search, navigate }) {
       ) : (
         <section className="start">
           <button className="btn danger block" onClick={end}>Kết thúc hành trình</button>
+          <p className="note">Hãy để màn hình sáng khi đi. Nếu khóa màn hình, điện thoại sẽ dừng định vị và thuyết minh.</p>
           {gps.status !== 'ok' && <p className="note">{GPS_MESSAGES[gps.status] ?? GPS_MESSAGES.asking}</p>}
           {gps.status === 'ok' && gps.pos && (
             <p className="note" aria-live="polite">

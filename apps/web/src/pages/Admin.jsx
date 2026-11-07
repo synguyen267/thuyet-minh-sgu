@@ -12,6 +12,7 @@ import Geofence from './Geofence.jsx';
 import Voices from './Voices.jsx';
 import PoiEditor from './PoiEditor.jsx';
 import Stats from './Stats.jsx';
+import QrCodes from './QrCodes.jsx';
 
 const round6 = (n) => Math.round(n * 1e6) / 1e6;
 
@@ -66,11 +67,11 @@ export default function Admin({ navigate }) {
   const store = hasSupabase ? dbStore : local;
 
   const tabs = hasSupabase
-    ? [['poi', 'Điểm'], ['measure', 'Đo tọa độ'], ['geofence', 'Thử vùng'], ['voices', 'Giọng đọc'], ['stats', 'Thống kê']]
+    ? [['poi', 'Điểm'], ['measure', 'Đo tọa độ'], ['geofence', 'Thử vùng'], ['voices', 'Giọng đọc'], ['qr', 'Mã QR'], ['stats', 'Thống kê']]
     : [['measure', 'Đo tọa độ'], ['geofence', 'Thử vùng'], ['voices', 'Giọng đọc']];
 
   const head = (
-    <header className="top">
+    <header className="top no-print">
       <h1>Quản trị: Thuyết minh Đại học Sài Gòn</h1>
       <p>
         <Link to="/tour" navigate={navigate}>Xem trang khách</Link>
@@ -95,7 +96,7 @@ export default function Admin({ navigate }) {
   return (
     <div className="app admin">
       {head}
-      <nav className="tabs" style={{ '--n': tabs.length }} aria-label="Chức năng quản trị">
+      <nav className="tabs no-print" style={{ '--n': tabs.length }} aria-label="Chức năng quản trị">
         {tabs.map(([id, label]) => (
           <button key={id} className={tab === id ? 'on' : ''} aria-current={tab === id ? 'page' : undefined} onClick={() => setTab(id)}>{label}</button>
         ))}
@@ -108,6 +109,7 @@ export default function Admin({ navigate }) {
         {tab === 'measure' && <Measure gps={gps} store={store} />}
         {tab === 'geofence' && <Geofence gps={gps} store={store} />}
         {tab === 'voices' && <Voices />}
+        {tab === 'qr' && <QrCodes pois={db.pois} />}
         {tab === 'stats' && <Stats pois={db.pois} />}
       </main>
     </div>

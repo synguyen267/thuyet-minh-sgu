@@ -12,6 +12,7 @@ export default function Geofence({ gps, store }) {
   const [lang, setLang] = useState('vi');
   const [cooldownMin, setCooldownMin] = useState(1);
   const [running, setRunning] = useState(false);
+  const [ignoreAcc, setIgnoreAcc] = useState(false);
   const [interrupted, setInterrupted] = useState(false);
   const [log, setLog] = useState([]);
 
@@ -54,7 +55,7 @@ export default function Geofence({ gps, store }) {
 
   // Đánh giá vùng mỗi khi vị trí đổi: chỉ phát khi VÀO vùng một điểm mới
   const prevSel = useRef(null);
-  const candidates = useMemo(() => (pos ? findCandidates(pos, pois, { radiusScale: scale }) : []), [pos, pois, scale]);
+  const candidates = useMemo(() => (pos ? findCandidates(pos, pois, { radiusScale: scale, maxAccuracyM: ignoreAcc ? Infinity : 60 }) : []), [pos, pois, scale, ignoreAcc]);
   const selId = candidates[0]?.poi.id ?? null;
 
   useEffect(() => {
@@ -161,6 +162,11 @@ export default function Geofence({ gps, store }) {
         </select>
       </label>
 
+      <label className="check">
+        <input type="checkbox" checked={ignoreAcc} onChange={(e) => setIgnoreAcc(e.target.checked)} />
+        <span>Bỏ qua giới hạn sai số GPS (chỉ để thử trên laptop; ngoài trường nên tắt)</span>
+      </label>
+
       {!speechSupported() && <p className="note warn">Trình duyệt này không hỗ trợ đọc văn bản (TTS).</p>}
 
       {running ? (
@@ -180,10 +186,10 @@ export default function Geofence({ gps, store }) {
         </div>
       )}
 
-      {pos && Number.isFinite(pos.accuracy) && pos.accuracy > 60 && (
+      {!ignoreAcc && pos && Number.isFinite(pos.accuracy) && pos.accuracy > 60 && (
         <p className="note warn">Sai số GPS đang lớn (±{Math.round(pos.accuracy)} m) nên vị trí bị bỏ qua, chưa phát được. Ra chỗ thoáng hoặc đợi vài giây.</p>
       )}
-      {pos && !(pos.accuracy > 60) && (
+      {pos && (ignoreAcc || !(pos.accuracy > 60)) && (
         <p className="note">{selId ? `Đang trong vùng: ${poiName(byId[selId])}.` : 'Chưa vào vùng nào.'} (GPS ±{Math.round(pos.accuracy ?? 0)} m)</p>
       )}
 
