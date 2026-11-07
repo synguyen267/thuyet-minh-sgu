@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { poiName } from '@tm/core';
+import { poiName, zonesOf } from '@tm/core';
 
 // Chỉ dùng để mở bản đồ khi chưa điểm nào có tọa độ (khu vực quận 5), không phải tọa độ điểm.
 const FALLBACK_CENTER = [10.7598, 106.682];
@@ -30,21 +30,26 @@ export default function MapView({ pois, pos, selectedId, scale = 1, lang = 'vi',
     g.clearLayers();
     const points = [];
     for (const p of pois) {
-      if (p.lat == null || p.lng == null) continue;
+      const zones = zonesOf(p);
+      if (zones.length === 0) continue;
       const sel = p.id === selectedId;
-      L.circle([p.lat, p.lng], {
-        radius: (p.radius_m ?? 20) * scale,
-        color: sel ? '#0b6b74' : '#6b7f8a',
-        weight: sel ? 3 : 1,
-        fillOpacity: sel ? 0.18 : 0.07,
-      }).addTo(g);
-      const pin = L.marker([p.lat, p.lng], {
+      zones.forEach((z, k) => {
+        L.circle([z.lat, z.lng], {
+          radius: z.radius_m * scale,
+          color: sel ? '#0b6b74' : '#6b7f8a',
+          weight: sel ? 3 : 1,
+          fillOpacity: sel ? 0.18 : 0.07,
+        }).addTo(g);
+        points.push([z.lat, z.lng]);
+        if (k > 0) L.circleMarker([z.lat, z.lng], { radius: 4, color: '#fff', weight: 1, fillColor: sel ? '#0b6b74' : '#5b6b75', fillOpacity: 1 }).addTo(g);
+      });
+      const main = zones[0];
+      const pin = L.marker([main.lat, main.lng], {
         icon: L.divIcon({ className: `poi-pin${sel ? ' sel' : ''}`, html: `<span>${p.tour_order ?? ''}</span>`, iconSize: [28, 28] }),
         title: poiName(p, lang),
       });
       pin.on('click', () => onSelect?.(p.id));
       pin.addTo(g);
-      points.push([p.lat, p.lng]);
     }
     if (pos) {
       L.circle([pos.lat, pos.lng], { radius: Math.max(pos.accuracy ?? 0, 3), color: '#2563eb', weight: 1, fillOpacity: 0.1 }).addTo(g);

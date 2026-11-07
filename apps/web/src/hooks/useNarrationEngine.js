@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { NarrationController, pickNarration } from '@tm/core';
 import { playNarration, stopNarration } from '../narrator.js';
-import { voicesFor } from '../speech.js';
+import { getVoices, speechSupported, voicesFor } from '../speech.js';
 import { logPlay } from '../data/repo.js';
 
 /**
@@ -49,15 +49,23 @@ export function useNarrationEngine({ pois, lang, voiceURI, cooldownMin, getPos }
         if (r.action === 'play') start(r.id, r.source);
         return;
       }
-      const textOnly = !n.audioUrl && voicesFor(n.lang).length === 0;
+      // Nhiều trình duyệt trả danh sách giọng rỗng dù vẫn đọc được: chỉ coi là thiếu giọng khi có danh sách mà không có ngôn ngữ này.
+      const all = getVoices();
+      const textOnly = !n.audioUrl && (!speechSupported() || (all.length > 0 && voicesFor(n.lang, all).length === 0));
+      const readTime = Math.min(30000, 4000 + n.text.length * 60);
       const session = { id, lang: n.lang, source, t0: Date.now(), timer: null };
       playRef.current = session;
       setCurrent({ id, text: n.text, lang: n.lang, textOnly, source });
       setVisited((s) => new Set(s).add(id));
       const done = () => { if (playRef.current === session) finish(true); };
-      const fail = () => { if (playRef.current === session) finish(false); };
+      const fail = () => {
+        if (playRef.current !== session) return;
+        // Không phát được tiếng: hiện chữ thay thế rồi tự sang điểm kế tiếp
+        setCurrent((c) => (c && c.id === id ? { ...c, textOnly: true } : c));
+        session.timer = setTimeout(done, readTime);
+      };
       if (textOnly) {
-        session.timer = setTimeout(done, Math.min(30000, 4000 + n.text.length * 60));
+        session.timer = setTimeout(done, readTime);
       } else {
         playNarration({ text: n.text, lang: n.lang, audioUrl: n.audioUrl, voiceURI: v, onend: done, onerror: fail });
       }

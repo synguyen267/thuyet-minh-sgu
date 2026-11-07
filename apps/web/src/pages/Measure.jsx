@@ -11,6 +11,7 @@ export default function Measure({ gps, store }) {
   const [count, setCount] = useState(0);
   const [msg, setMsg] = useState('');
   const [copied, setCopied] = useState(false);
+  const [mode, setMode] = useState('main'); // main: tâm chính, extra: vùng phụ cho khu dài
   const samples = useRef([]);
 
   // Mỗi lần có vị trí mới trong lúc đo thì thêm vào mẫu
@@ -31,8 +32,8 @@ export default function Measure({ gps, store }) {
         const fix = averageFixes(samples.current);
         setRunning(false);
         if (fix) {
-          Promise.resolve(store.save(selected, fix))
-            .then(() => setMsg(`Đã lưu từ ${fix.samples} mẫu, sai số khoảng ±${fix.accuracy_m} m.`))
+          Promise.resolve(mode === 'extra' && store.addZone ? store.addZone(selected, fix) : store.save(selected, fix))
+            .then(() => setMsg(`${mode === 'extra' ? 'Đã thêm vùng phụ' : 'Đã lưu'} từ ${fix.samples} mẫu, sai số khoảng ±${fix.accuracy_m} m.`))
             .catch((e) => setMsg(`Không lưu được: ${e.message}`));
         } else {
           setMsg('Chưa nhận được vị trí nào. Hãy thử lại ở chỗ thoáng.');
@@ -81,8 +82,16 @@ export default function Measure({ gps, store }) {
         </select>
       </label>
 
+      {store.addZone && (
+        <fieldset className="modes" disabled={running}>
+          <legend>Loại điểm đo</legend>
+          <label className="check"><input type="radio" name="mode" checked={mode === 'main'} onChange={() => setMode('main')} /><span>Tâm chính của điểm (ghi đè tọa độ cũ)</span></label>
+          <label className="check"><input type="radio" name="mode" checked={mode === 'extra'} onChange={() => setMode('extra')} /><span>Thêm vùng phụ (cho khu dài như Khu A: đứng ở nhiều chỗ dọc khu rồi đo từng chỗ)</span></label>
+        </fieldset>
+      )}
+
       <button className="btn primary block" onClick={start} disabled={!ready || running}>
-        {running ? `Đang đo… còn ${left} giây (${count} mẫu)` : `Đo vị trí cho ${poiName(current)}`}
+        {running ? `Đang đo… còn ${left} giây (${count} mẫu)` : (mode === 'extra' && store.addZone ? `Đo thêm vùng phụ cho ${poiName(current)}` : `Đo vị trí cho ${poiName(current)}`)}
       </button>
       {!ready && <p className="note">Bật GPS ở phía trên trước khi đo.</p>}
       {msg && <p className="note ok" role="status">{msg}</p>}
@@ -92,7 +101,7 @@ export default function Measure({ gps, store }) {
         {pois.map((p) => (
           <li key={p.id} className={p.id === selected ? 'sel' : ''}>
             <button className="poi-row" onClick={() => !running && setSelected(p.id)}>
-              <span className="poi-name">{p.tour_order}. {poiName(p)}</span>
+              <span className="poi-name">{p.tour_order}. {poiName(p)}{(p.extra_zones ?? []).length > 0 ? ` (+${p.extra_zones.length} vùng phụ)` : ''}</span>
               {p.lat != null ? (
                 <span className="poi-meta done">
                   {Number(p.lat).toFixed(6)}, {Number(p.lng).toFixed(6)}{p.measured ? ` (±${p.measured.accuracy_m} m)` : ''}

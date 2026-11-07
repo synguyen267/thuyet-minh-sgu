@@ -55,6 +55,12 @@ export default function Admin({ navigate }) {
       await savePoi(id, { lat: round6(fix.lat), lng: round6(fix.lng) });
       await db.reload();
     },
+    async addZone(id, fix) {
+      const p = db.pois.find((x) => x.id === id);
+      const zones = [...(p?.extra_zones ?? []), { lat: round6(fix.lat), lng: round6(fix.lng), radius_m: p?.radius_m ?? 20 }];
+      await savePoi(id, { extra_zones: zones });
+      await db.reload();
+    },
     exportJson: () => JSON.stringify(db.pois.map((p) => ({ id: p.id, lat: p.lat, lng: p.lng })), null, 2),
   };
   const store = hasSupabase ? dbStore : local;

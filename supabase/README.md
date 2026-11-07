@@ -28,11 +28,17 @@ cũng không đọc được nhật ký hay sửa được nội dung. Đã ki�
 2. Mở file `supabase/migrations/0001_init.sql`, chép toàn bộ, dán vào, bấm **Run**.
 3. Thấy "Success. No rows returned" là xong. Chạy lại lần nữa cũng không sao.
 
+### 2b. Thêm vùng phụ cho khu dài (bản cập nhật)
+Mở `supabase/migrations/0002_poi_zones.sql`, dán vào query mới, bấm **Run**. File này thêm cột `extra_zones` (các vùng
+kích hoạt phụ, tối đa 12 vùng mỗi điểm) để khu dài như Khu A có nhiều điểm kích hoạt. Chạy lại nhiều lần cũng không sao.
+
 ### 3. Nạp dữ liệu 10 điểm
 1. Mở file `supabase/seed.sql`, chép toàn bộ, dán vào query mới, bấm **Run**.
 2. Kiểm tra: chạy `select count(*) from public.poi;` phải ra **10**.
 
-Sau khi đo tọa độ ở trường: dán tọa độ vào `packages/core/data/pois.sample.json`, chạy `npm run db:seed`
+Nếu bạn đo tọa độ trực tiếp trong trang `/admin` thì KHÔNG cần bước này nữa (và chạy lại seed cũng không xóa tọa độ đã đo).
+
+Cách cũ, khi đo xong rồi dán tọa độ vào `packages/core/data/pois.sample.json`, chạy `npm run db:seed`
 để sinh lại `seed.sql`, rồi dán vào SQL Editor chạy lại. Lệnh này cập nhật tọa độ, bán kính, ưu tiên,
 thứ tự tuyến của điểm; còn lời thuyết minh đã có thì giữ nguyên.
 

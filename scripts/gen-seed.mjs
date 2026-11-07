@@ -12,7 +12,7 @@ const num = (n) => (Number.isFinite(n) ? String(n) : 'null');
 
 const lines = [
   '-- File sinh tự động bởi scripts/gen-seed.mjs. KHÔNG sửa tay: sửa pois.sample.json rồi chạy lại.',
-  '-- Chạy được nhiều lần. Điểm: cập nhật tọa độ, bán kính, ưu tiên, thứ tự. Bản dịch: chỉ thêm nếu chưa có.',
+  '-- Chạy được nhiều lần. Điểm: cập nhật bán kính, ưu tiên, thứ tự; chỉ ghi tọa độ khi file có tọa độ (không xóa tọa độ đã đo trong CSDL). Bản dịch: chỉ thêm nếu chưa có.',
   '',
 ];
 
@@ -21,7 +21,8 @@ for (const p of data.pois) {
     'insert into public.poi (id, tour_order, lat, lng, radius_m, priority, is_active)',
     `values (${str(p.id)}, ${num(p.tour_order)}, ${num(p.lat)}, ${num(p.lng)}, ${num(p.radius_m)}, ${num(p.priority)}, ${p.is_active !== false})`,
     'on conflict (id) do update set',
-    '  tour_order = excluded.tour_order, lat = excluded.lat, lng = excluded.lng,',
+    '  tour_order = excluded.tour_order,',
+    '  lat = coalesce(excluded.lat, public.poi.lat), lng = coalesce(excluded.lng, public.poi.lng),',
     '  radius_m = excluded.radius_m, priority = excluded.priority;',
     ''
   );

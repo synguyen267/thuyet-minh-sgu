@@ -13,7 +13,7 @@ export default function Home({ navigate }) {
       <div className="bento">
         <section className="tile wide">
           <h2>Tuyến tham quan 10 điểm</h2>
-          <p>Từ Cổng chính qua khu HB, D, C, căn tin, B, A, cổng sau, khu E, rồi tới sân bóng. Bạn có thể đi theo thứ tự hoặc đi tới đâu nghe tới đó.</p>
+          <p>Từ Cổng chính qua khu HB, D, C, căn tin, B, A, cổng sau, khu E, rồi tới sân bóng. Đi theo thứ tự nào cũng được: bước vào vùng của khu nào là nghe khu đó.</p>
         </section>
         <section className="tile">
           <h2>5 ngôn ngữ</h2>

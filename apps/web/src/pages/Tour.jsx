@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createMovementFilter, distancesTo, findCandidates, nextStop, poiName } from '@tm/core';
+import { createMovementFilter, distancesTo, findCandidates, hasZones, poiName } from '@tm/core';
 import { Link } from '../router.jsx';
 import { useGeolocation } from '../hooks/useGeolocation.js';
 import { usePoiData } from '../hooks/usePoiData.js';
@@ -38,7 +38,7 @@ export default function Tour({ search, navigate }) {
     pois, lang, voiceURI: getSavedVoice(lang), cooldownMin: settings.cooldownMin, getPos: () => posRef.current,
   });
 
-  const withCoords = useMemo(() => pois.filter((p) => p.lat != null && p.lng != null), [pois]);
+  const withCoords = useMemo(() => pois.filter(hasZones), [pois]);
   const candidates = useMemo(
     () => (livePos ? findCandidates(livePos, withCoords, { radiusScale: settings.scale }) : []),
     [livePos, withCoords, settings.scale]
@@ -68,7 +68,11 @@ export default function Tour({ search, navigate }) {
     () => Object.fromEntries(distancesTo(livePos, withCoords).map((d) => [d.poi.id, d.distance])),
     [livePos, withCoords]
   );
-  const next = running ? nextStop(pois, [...engine.visited]) : null;
+  const ordered = useMemo(
+    () => (livePos ? [...pois].sort((a, b) => (dist[a.id] ?? Infinity) - (dist[b.id] ?? Infinity) || (a.tour_order ?? 99) - (b.tour_order ?? 99)) : pois),
+    [pois, dist, livePos]
+  );
+  const nearest = ordered.find((p) => dist[p.id] != null) ?? null;
   const qrPoi = qrId ? pois.find((p) => p.id === qrId) : null;
 
   function begin() {
@@ -145,7 +149,17 @@ export default function Tour({ search, navigate }) {
         <section className="start">
           <button className="btn danger block" onClick={end}>Kết thúc hành trình</button>
           {gps.status !== 'ok' && <p className="note">{GPS_MESSAGES[gps.status] ?? GPS_MESSAGES.asking}</p>}
-          {gps.status === 'ok' && gps.pos && <p className="note">Vị trí chính xác khoảng ±{Math.round(gps.pos.accuracy)} m.</p>}
+          {gps.status === 'ok' && gps.pos && (
+            <p className="note" aria-live="polite">
+              {gps.pos.accuracy > 60
+                ? `Sai số GPS đang lớn (±${Math.round(gps.pos.accuracy)} m) nên chưa tự phát được. Hãy ra chỗ thoáng hoặc đợi vài giây.`
+                : selId
+                  ? `Bạn đang ở trong vùng: ${poiName(pois.find((p) => p.id === selId), lang)}.`
+                  : nearest
+                    ? `Chưa vào vùng nào. Gần nhất: ${poiName(nearest, lang)}, cách ${fmtDist(dist[nearest.id])}. (GPS ±${Math.round(gps.pos.accuracy)} m)`
+                    : `GPS ±${Math.round(gps.pos.accuracy)} m.`}
+            </p>
+          )}
         </section>
       )}
 
@@ -169,17 +183,13 @@ export default function Tour({ search, navigate }) {
         </section>
       )}
 
-      {running && next && (
-        <p className="next">Điểm tiếp theo: <strong>{poiName(next, lang)}</strong>{dist[next.id] != null ? `, cách ${fmtDist(dist[next.id])}` : ''}</p>
-      )}
-      {running && !next && pois.length > 0 && <p className="next">Bạn đã nghe hết các điểm trên tuyến.</p>}
-
       </div>
       <aside className="tour-side">
-      <h2 className="stops-title">Tuyến tham quan</h2>
+      <h2 className="stops-title">Các điểm trong trường</h2>
+      <p className="note">Đi theo thứ tự nào cũng được: bạn bước vào vùng của điểm nào thì điểm đó được thuyết minh.</p>
       {loading ? <p className="note">Đang tải…</p> : (
         <ol className="stops">
-          {pois.map((p) => (
+          {ordered.map((p) => (
             <li key={p.id} className={`stop${engine.visited.has(p.id) ? ' visited' : ''}${engine.current?.id === p.id ? ' playing' : ''}`}>
               <span className="stop-n">{p.tour_order}</span>
               <span className="stop-body">

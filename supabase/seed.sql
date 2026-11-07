@@ -1,64 +1,74 @@
 -- File sinh tự động bởi scripts/gen-seed.mjs. KHÔNG sửa tay: sửa pois.sample.json rồi chạy lại.
--- Chạy được nhiều lần. Điểm: cập nhật tọa độ, bán kính, ưu tiên, thứ tự. Bản dịch: chỉ thêm nếu chưa có.
+-- Chạy được nhiều lần. Điểm: cập nhật bán kính, ưu tiên, thứ tự; chỉ ghi tọa độ khi file có tọa độ (không xóa tọa độ đã đo trong CSDL). Bản dịch: chỉ thêm nếu chưa có.
 
 insert into public.poi (id, tour_order, lat, lng, radius_m, priority, is_active)
 values ('cong-chinh', 1, null, null, 15, 2, true)
 on conflict (id) do update set
-  tour_order = excluded.tour_order, lat = excluded.lat, lng = excluded.lng,
+  tour_order = excluded.tour_order,
+  lat = coalesce(excluded.lat, public.poi.lat), lng = coalesce(excluded.lng, public.poi.lng),
   radius_m = excluded.radius_m, priority = excluded.priority;
 
 insert into public.poi (id, tour_order, lat, lng, radius_m, priority, is_active)
 values ('khu-hb', 2, null, null, 15, 1, true)
 on conflict (id) do update set
-  tour_order = excluded.tour_order, lat = excluded.lat, lng = excluded.lng,
+  tour_order = excluded.tour_order,
+  lat = coalesce(excluded.lat, public.poi.lat), lng = coalesce(excluded.lng, public.poi.lng),
   radius_m = excluded.radius_m, priority = excluded.priority;
 
 insert into public.poi (id, tour_order, lat, lng, radius_m, priority, is_active)
 values ('khu-d', 3, null, null, 20, 1, true)
 on conflict (id) do update set
-  tour_order = excluded.tour_order, lat = excluded.lat, lng = excluded.lng,
+  tour_order = excluded.tour_order,
+  lat = coalesce(excluded.lat, public.poi.lat), lng = coalesce(excluded.lng, public.poi.lng),
   radius_m = excluded.radius_m, priority = excluded.priority;
 
 insert into public.poi (id, tour_order, lat, lng, radius_m, priority, is_active)
 values ('khu-c', 4, null, null, 25, 1, true)
 on conflict (id) do update set
-  tour_order = excluded.tour_order, lat = excluded.lat, lng = excluded.lng,
+  tour_order = excluded.tour_order,
+  lat = coalesce(excluded.lat, public.poi.lat), lng = coalesce(excluded.lng, public.poi.lng),
   radius_m = excluded.radius_m, priority = excluded.priority;
 
 insert into public.poi (id, tour_order, lat, lng, radius_m, priority, is_active)
 values ('can-tin', 5, null, null, 20, 1, true)
 on conflict (id) do update set
-  tour_order = excluded.tour_order, lat = excluded.lat, lng = excluded.lng,
+  tour_order = excluded.tour_order,
+  lat = coalesce(excluded.lat, public.poi.lat), lng = coalesce(excluded.lng, public.poi.lng),
   radius_m = excluded.radius_m, priority = excluded.priority;
 
 insert into public.poi (id, tour_order, lat, lng, radius_m, priority, is_active)
 values ('khu-b', 6, null, null, 25, 1, true)
 on conflict (id) do update set
-  tour_order = excluded.tour_order, lat = excluded.lat, lng = excluded.lng,
+  tour_order = excluded.tour_order,
+  lat = coalesce(excluded.lat, public.poi.lat), lng = coalesce(excluded.lng, public.poi.lng),
   radius_m = excluded.radius_m, priority = excluded.priority;
 
 insert into public.poi (id, tour_order, lat, lng, radius_m, priority, is_active)
 values ('khu-a', 7, null, null, 30, 1, true)
 on conflict (id) do update set
-  tour_order = excluded.tour_order, lat = excluded.lat, lng = excluded.lng,
+  tour_order = excluded.tour_order,
+  lat = coalesce(excluded.lat, public.poi.lat), lng = coalesce(excluded.lng, public.poi.lng),
   radius_m = excluded.radius_m, priority = excluded.priority;
 
 insert into public.poi (id, tour_order, lat, lng, radius_m, priority, is_active)
 values ('cong-sau', 8, null, null, 15, 2, true)
 on conflict (id) do update set
-  tour_order = excluded.tour_order, lat = excluded.lat, lng = excluded.lng,
+  tour_order = excluded.tour_order,
+  lat = coalesce(excluded.lat, public.poi.lat), lng = coalesce(excluded.lng, public.poi.lng),
   radius_m = excluded.radius_m, priority = excluded.priority;
 
 insert into public.poi (id, tour_order, lat, lng, radius_m, priority, is_active)
 values ('khu-e', 9, null, null, 15, 1, true)
 on conflict (id) do update set
-  tour_order = excluded.tour_order, lat = excluded.lat, lng = excluded.lng,
+  tour_order = excluded.tour_order,
+  lat = coalesce(excluded.lat, public.poi.lat), lng = coalesce(excluded.lng, public.poi.lng),
   radius_m = excluded.radius_m, priority = excluded.priority;
 
 insert into public.poi (id, tour_order, lat, lng, radius_m, priority, is_active)
 values ('san-bong', 10, null, null, 30, 1, true)
 on conflict (id) do update set
-  tour_order = excluded.tour_order, lat = excluded.lat, lng = excluded.lng,
+  tour_order = excluded.tour_order,
+  lat = coalesce(excluded.lat, public.poi.lat), lng = coalesce(excluded.lng, public.poi.lng),
   radius_m = excluded.radius_m, priority = excluded.priority;
 
 insert into public.poi_translation (poi_id, lang, name, tts_script, status, source)

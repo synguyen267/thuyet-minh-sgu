@@ -200,3 +200,9 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
   .admin .page { max-width: 780px; }
   .admin .readout { max-width: 780px; }
 }
+
+.modes { border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; margin: 0 0 12px; }
+.modes legend { color: var(--ink-soft); font-size: 0.85rem; padding: 0 6px; }
+.zone-row { display: grid; grid-template-columns: 1fr 1fr 90px auto; gap: 8px; align-items: end; margin-bottom: 8px; }
+.zone-row .field { margin-bottom: 0; }
+@media (max-width: 560px) { .zone-row { grid-template-columns: 1fr 1fr; } .zone-row .btn { grid-column: 1 / -1; } }

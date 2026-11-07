@@ -25,18 +25,27 @@ export function saveVoice(code, uri) {
   try { localStorage.setItem(voiceKey(code), uri); } catch { /* bỏ qua */ }
 }
 
-/** Đọc một đoạn văn. Luôn hủy câu đang đọc trước để không chồng giọng. */
+/** Đọc một đoạn văn. Hủy câu đang đọc trước để không chồng giọng. */
 export function speak(text, { code = 'vi', voiceURI = '', onend, onerror } = {}) {
   if (!speechSupported()) { onerror?.(new Error('Trình duyệt không hỗ trợ đọc văn bản')); return; }
+  const synth = window.speechSynthesis;
   const lang = LANGS.find((l) => l.code === code) ?? LANGS[0];
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = lang.tag;
-  const voice = voiceURI ? getVoices().find((v) => v.voiceURI === voiceURI) : null;
-  if (voice) u.voice = voice;
-  u.onend = () => onend?.();
-  u.onerror = (e) => { if (e.error !== 'canceled' && e.error !== 'interrupted') onerror?.(e); };
-  window.speechSynthesis.speak(u);
+  const go = () => {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang.tag;
+    const voice = voiceURI ? getVoices().find((v) => v.voiceURI === voiceURI) : null;
+    if (voice) u.voice = voice;
+    u.onend = () => onend?.();
+    u.onerror = (e) => { if (e.error !== 'canceled' && e.error !== 'interrupted') onerror?.(e); };
+    synth.speak(u);
+  };
+  // Chrome (nhất là Android) hay bỏ qua câu mới nếu speak() ngay sau cancel(): chờ một nhịp ngắn.
+  if (synth.speaking || synth.pending) {
+    synth.cancel();
+    setTimeout(go, 120);
+  } else {
+    go();
+  }
 }
 
 export function stopSpeaking() {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { NarrationController, findCandidates, distancesTo, poiName } from '@tm/core';
+import { NarrationController, findCandidates, distancesTo, hasZones, poiName } from '@tm/core';
 import { speak, stopSpeaking, unlockSpeech, getSavedVoice, speechSupported } from '../speech.js';
 
 const SCALES = [0.5, 1, 1.5, 2];
@@ -15,7 +15,7 @@ export default function Geofence({ gps, store }) {
   const [interrupted, setInterrupted] = useState(false);
   const [log, setLog] = useState([]);
 
-  const measured = useMemo(() => pois.filter((p) => p.lat != null), [pois]);
+  const measured = useMemo(() => pois.filter(hasZones), [pois]);
   const byId = useMemo(() => Object.fromEntries(pois.map((p) => [p.id, p])), [pois]);
   const ctl = useMemo(() => new NarrationController({ cooldownMs: cooldownMin * 60000 }), [cooldownMin]);
 
@@ -63,13 +63,13 @@ export default function Geofence({ gps, store }) {
     prevSel.current = selId;
     if (selId) {
       const c = candidates[0];
-      addLog(`Vào vùng ${c.poiName(poi)} (cách ${Math.round(c.distance)} m)`);
+      addLog(`Vào vùng ${poiName(c.poi)} (cách ${Math.round(c.distance)} m)`);
       if (running) handle(ctl.request(selId, { source: 'gps' }));
     } else if (was) {
       addLog('Ra khỏi vùng');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selId]);
+  }, [selId, running]); // running: bấm Bắt đầu khi đang đứng sẵn trong vùng thì phải phát ngay
 
   // FR-22: trang bị ẩn (chuyển app, khóa màn hình) thì tạm dừng
   useEffect(() => {
@@ -178,6 +178,13 @@ export default function Geofence({ gps, store }) {
             <button className="btn" onClick={dismiss}>Bỏ qua</button>
           </div>
         </div>
+      )}
+
+      {pos && Number.isFinite(pos.accuracy) && pos.accuracy > 60 && (
+        <p className="note warn">Sai số GPS đang lớn (±{Math.round(pos.accuracy)} m) nên vị trí bị bỏ qua, chưa phát được. Ra chỗ thoáng hoặc đợi vài giây.</p>
+      )}
+      {pos && !(pos.accuracy > 60) && (
+        <p className="note">{selId ? `Đang trong vùng: ${poiName(byId[selId])}.` : 'Chưa vào vùng nào.'} (GPS ±{Math.round(pos.accuracy ?? 0)} m)</p>
       )}
 
       <h3>Khoảng cách tới các điểm</h3>
