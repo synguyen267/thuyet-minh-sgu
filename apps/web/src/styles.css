@@ -188,7 +188,8 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
   .qr-card { max-width: 640px; }
 
   /* Trang chủ */
-  .home-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 56px; align-items: center; }
+  .home-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 56px; align-items: start; }
+  .home .bento { margin-top: 72px; }
   .home-hero { padding: 72px 0 48px; }
   .home-hero h1 { font-size: 3.2rem; }
   .home-hero p { font-size: 1.15rem; }
