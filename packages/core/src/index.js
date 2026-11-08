@@ -2,4 +2,4 @@ export { haversineMeters, hasCoords, createMovementFilter, averageFixes } from '
 export { findCandidates, selectPoi, distancesTo, zonesOf, hasZones } from './geofence.js';
 export { NarrationController } from './narration.js';
 export { sortByTour, nextStop } from './tour.js';
-export { LANG_CODES, poiName, pickNarration, shapePoiRow } from './content.js';
+export { LANG_CODES, poiName, pickNarration, shapePoiRow, slugify } from './content.js';

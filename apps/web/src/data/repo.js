@@ -97,3 +97,28 @@ export async function fetchStats() {
   for (const r of [top, avg, plays, tracks, heat]) check(r.error);
   return { top: top.data, avg: avg.data, totalPlays: plays.count ?? 0, totalTracks: tracks.count ?? 0, heat: heat.data };
 }
+
+// ---------- Thêm / xóa điểm (quản trị) ----------
+/** Tạo điểm mới ở trạng thái ẨN (khách chưa thấy) kèm tên tiếng Việt dạng bản nháp. */
+export async function createPoi({ id, name_vi, tour_order, radius_m, priority }) {
+  const { error } = await supabase.from('poi').insert({ id, tour_order, radius_m, priority, is_active: false });
+  check(error);
+  const { error: e2 } = await supabase
+    .from('poi_translation')
+    .insert({ poi_id: id, lang: 'vi', name: name_vi, status: 'draft', source: 'human' });
+  if (e2) {
+    await supabase.from('poi').delete().eq('id', id); // hoàn tác để không để lại điểm mồ côi
+    check(e2);
+  }
+}
+
+export async function countPlays(id) {
+  const { count, error } = await supabase.from('play_log').select('*', { count: 'exact', head: true }).eq('poi_id', id);
+  check(error);
+  return count ?? 0;
+}
+
+export async function deletePoi(id) {
+  const { error } = await supabase.from('poi').delete().eq('id', id);
+  check(error);
+}

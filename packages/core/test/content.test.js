@@ -41,3 +41,18 @@ test('shapePoiRow chịu được điểm chưa có bản dịch nào', () => {
   const p = shapePoiRow({ id: 'x', poi_translation: null });
   assert.deepEqual(p.name, {});
 });
+
+import { slugify } from '../src/index.js';
+
+test('slugify: bỏ dấu tiếng Việt và chuyển đ thành d', () => {
+  assert.equal(slugify('Hội trường A'), 'hoi-truong-a');
+  assert.equal(slugify('Khu thư viện (KLF)'), 'khu-thu-vien-klf');
+  assert.equal(slugify('Đại học Sài Gòn'), 'dai-hoc-sai-gon');
+});
+
+test('slugify: chuỗi rỗng hoặc toàn ký tự lạ cho kết quả rỗng, mã quá dài được cắt', () => {
+  assert.equal(slugify('  !!! '), '');
+  assert.equal(slugify(null), '');
+  assert.ok(slugify('a'.repeat(100)).length <= 40);
+  assert.match(slugify('Tên rất dài '.repeat(10)), /^[a-z0-9-]{1,40}$/);
+});

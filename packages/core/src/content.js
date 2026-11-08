@@ -37,3 +37,17 @@ export function shapePoiRow(row) {
   const { poi_translation, ...rest } = row;
   return { ...rest, name, tts, audio, status, description };
 }
+
+/** Tạo mã điểm (id) từ tên: bỏ dấu tiếng Việt, chữ thường, nối bằng dấu gạch ngang. "Hội trường A" -> "hoi-truong-a". */
+export function slugify(name, maxLen = 40) {
+  return String(name ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'd')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, maxLen)
+    .replace(/-+$/g, '');
+}

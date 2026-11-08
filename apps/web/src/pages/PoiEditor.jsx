@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { LANG_CODES, poiName } from '@tm/core';
 import { LANGS } from '../speech.js';
-import { savePoi, saveTranslation } from '../data/repo.js';
+import { savePoi, saveTranslation, countPlays, deletePoi } from '../data/repo.js';
+import NewPoi from './NewPoi.jsx';
 
 const num = (v) => (v === '' || v == null ? null : Number(v));
 
@@ -29,6 +30,24 @@ export default function PoiEditor({ pois, reload, writable }) {
   useEffect(() => { if (poi) setForm(toForm(poi)); }, [sel, pois]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!poi || !form) return <div className="page"><p className="empty">Chưa có điểm nào.</p></div>;
+
+  async function removePoi() {
+    setBusy(true); setMsg('');
+    try {
+      const n = await countPlays(sel);
+      if (n > 0) throw new Error(`điểm này đã có ${n} lượt nghe. Hãy bỏ tick "Hiện cho khách" để ẩn thay vì xóa, để giữ số liệu.`);
+      if (!window.confirm(`Xóa hẳn điểm "${poiName(poi)}"? Việc này không hoàn tác được và mã QR của điểm sẽ hỏng.`)) return;
+      await deletePoi(sel);
+      const other = pois.find((x) => x.id !== sel);
+      await reload();
+      setSel(other?.id ?? '');
+      setMsg('Đã xóa điểm.');
+    } catch (e) {
+      setMsg(`Lỗi: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
   const setTr = (patch) => setForm((f) => ({ ...f, tr: { ...f.tr, [lang]: { ...f.tr[lang], ...patch } } }));
@@ -81,6 +100,7 @@ export default function PoiEditor({ pois, reload, writable }) {
   return (
     <div className="page">
       <h2>Quản lý điểm</h2>
+      <NewPoi pois={pois} reload={reload} onCreated={(id) => { setSel(id); setMsg(''); }} />
       <label className="field">
         <span>Chọn điểm</span>
         <select value={sel} onChange={(e) => { setSel(e.target.value); setMsg(''); }}>
@@ -134,6 +154,9 @@ export default function PoiEditor({ pois, reload, writable }) {
       <button className="btn primary block" onClick={save} disabled={busy || !writable}>{busy ? 'Đang lưu…' : 'Lưu điểm này'}</button>
       {!writable && <p className="note warn">Đang dùng dữ liệu mẫu nên chưa lưu được vào CSDL.</p>}
       {msg && <p className={`note ${msg.startsWith('Lỗi') ? 'warn' : 'ok'}`} role="status">{msg}</p>}
+      <h3>Xóa điểm</h3>
+      <p className="note">Ẩn điểm (bỏ tick "Hiện cho khách") thì khách không thấy nhưng dữ liệu còn nguyên. Chỉ xóa hẳn được điểm chưa có lượt nghe nào.</p>
+      <button className="btn danger" onClick={removePoi} disabled={busy || !writable}>Xóa điểm này</button>
       <p className="note">Tải ảnh và audio lên kho lưu trữ, cùng AI soạn nháp, sẽ có ở bước sau. Hiện bạn dán đường dẫn vào các ô trên.</p>
     </div>
   );

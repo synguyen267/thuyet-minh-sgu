@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createMovementFilter, distancesTo, findCandidates, hasZones, poiName } from '@tm/core';
+import { createMovementFilter, distancesTo, findCandidates, hasZones, pickNarration, poiName } from '@tm/core';
 import { Link } from '../router.jsx';
 import { useGeolocation } from '../hooks/useGeolocation.js';
 import { usePoiData } from '../hooks/usePoiData.js';
@@ -22,7 +22,7 @@ const fmtDist = (m) => (m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(
 
 export default function Tour({ search, navigate }) {
   const qrId = new URLSearchParams(search).get('poi');
-  const { pois, source, loading } = usePoiData();
+  const { pois: allPois, source, loading } = usePoiData();
   const [settings, setSettings] = useSettings();
   const [, bump] = useState(0);
   const [running, setRunning] = useState(false);
@@ -31,6 +31,8 @@ export default function Tour({ search, navigate }) {
   useWakeLock(running);
   const voices = useVoices();
   const { lang } = settings;
+  // Khách chỉ thấy điểm đã có nội dung thuyết minh (đã duyệt); điểm mới đang soạn thì ẩn
+  const pois = useMemo(() => allPois.filter((p) => pickNarration(p, lang)), [allPois, lang]);
 
   const posRef = useRef(null);
   const livePos = running ? gps.pos : null;
