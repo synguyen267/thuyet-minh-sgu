@@ -14,6 +14,42 @@ function labelOf(r) {
   return r.user_id ? 'Quản trị viên' : 'Khách chưa nhập tên'
 }
 
+/** Đọc chuỗi user agent thành "Hệ điều hành, ứng dụng" cho dễ nhìn. */
+function describeAgent(ua) {
+  if (!ua) return ''
+  const os = /iPhone|iPad|iPod/.test(ua)
+    ? 'iPhone/iPad'
+    : /Android/.test(ua)
+      ? 'Android'
+      : /Windows/.test(ua)
+        ? 'Windows'
+        : /Mac OS X|Macintosh/.test(ua)
+          ? 'Mac'
+          : /Linux/.test(ua)
+            ? 'Linux'
+            : 'Thiết bị khác'
+  const app = /Zalo/i.test(ua)
+    ? 'Zalo'
+    : /FBAN|FBAV|FB_IAB/.test(ua)
+      ? 'Facebook'
+      : /Instagram/.test(ua)
+        ? 'Instagram'
+        : /Edg(?:A|iOS)?\//.test(ua)
+          ? 'Edge'
+          : /SamsungBrowser/.test(ua)
+            ? 'Samsung Internet'
+            : /OPR\/|Opera/.test(ua)
+              ? 'Opera'
+              : /Firefox|FxiOS/.test(ua)
+                ? 'Firefox'
+                : /Chrome|CriOS/.test(ua)
+                  ? 'Chrome'
+                  : /Safari/.test(ua)
+                    ? 'Safari'
+                    : ''
+  return app ? `${os}, ${app}` : os
+}
+
 export default function ActiveDevices() {
   const [rows, setRows] = useState([])
   const [err, setErr] = useState('')
@@ -46,7 +82,7 @@ export default function ActiveDevices() {
 
   if (!supabase) return null
 
-  const named = rows.filter((r) => r.display_name).length
+  const guests = rows.filter((r) => !r.user_id).length
 
   return (
     <>
@@ -57,8 +93,8 @@ export default function ActiveDevices() {
           <strong>{rows.length}</strong>
         </div>
         <div className="stat">
-          <span>Đã nhập tên</span>
-          <strong>{named}</strong>
+          <span>Khách tham quan</span>
+          <strong>{guests}</strong>
         </div>
       </div>
       {rows.length > 0 && (
@@ -68,14 +104,16 @@ export default function ActiveDevices() {
               <div className="poi-row static">
                 <span className="poi-name">{labelOf(r)}</span>
                 <span className="poi-meta">
-                  {r.current_path || '/'}, {agoText(r.last_seen)}
+                  {[describeAgent(r.user_agent), r.current_path || '/', agoText(r.last_seen)]
+                    .filter(Boolean)
+                    .join(', ')}
                 </span>
               </div>
             </li>
           ))}
         </ul>
       )}
-      <p className="note">Tính các thiết bị có tín hiệu trong 2 phút gần nhất, tự làm mới mỗi 15 giây.</p>
+      <p className="note">Chỉ tính thiết bị đã nhập tên, có tín hiệu trong 2 phút gần nhất, tự làm mới mỗi 15 giây.</p>
     </>
   )
 }

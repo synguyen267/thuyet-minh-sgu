@@ -1,41 +1,34 @@
 const NAME_KEY = 'visitor_name'
-const SKIP_KEY = 'visitor_name_skipped'
 
+export const MIN_NAME = 2
 export const MAX_NAME = 40
 
-/** Tên khách đã nhập (lưu trong trình duyệt), rỗng nếu chưa có. */
+// Dự phòng khi trình duyệt chặn localStorage (ví dụ một số chế độ riêng tư)
+let memoryName = ''
+
+function cleanName(raw) {
+  return String(raw || '').trim().replace(/\s+/g, ' ').slice(0, MAX_NAME)
+}
+
+/** Tên khách đã nhập, rỗng nếu chưa có. */
 export function getVisitorName() {
+  if (memoryName) return memoryName
   try {
-    return (localStorage.getItem(NAME_KEY) || '').trim()
+    return cleanName(localStorage.getItem(NAME_KEY))
   } catch {
     return ''
   }
 }
 
-/** Lưu tên, trả về tên đã làm sạch (bỏ khoảng trắng thừa, tối đa 40 ký tự). */
-export function setVisitorName(name) {
-  const clean = String(name || '').trim().replace(/\s+/g, ' ').slice(0, MAX_NAME)
+/** Lưu tên nếu hợp lệ (ít nhất 2 ký tự). Trả về tên đã làm sạch, hoặc '' nếu không hợp lệ. */
+export function setVisitorName(raw) {
+  const clean = cleanName(raw)
+  if (clean.length < MIN_NAME) return ''
+  memoryName = clean
   try {
-    if (clean) localStorage.setItem(NAME_KEY, clean)
+    localStorage.setItem(NAME_KEY, clean)
   } catch {
-    // Trình duyệt chặn localStorage: tên chỉ có hiệu lực lần gửi này
+    // Không lưu được lâu dài: tên vẫn dùng được trong phiên này
   }
   return clean
-}
-
-/** Khách bấm "Bỏ qua": không hỏi lại trong phiên này (đóng trình duyệt thì hỏi lại). */
-export function isPromptSkipped() {
-  try {
-    return sessionStorage.getItem(SKIP_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
-export function skipPrompt() {
-  try {
-    sessionStorage.setItem(SKIP_KEY, '1')
-  } catch {
-    // bỏ qua
-  }
 }

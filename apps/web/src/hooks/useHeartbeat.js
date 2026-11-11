@@ -7,16 +7,25 @@ const INTERVAL_MS = 30000 // báo mỗi 30 giây
 
 let stopCurrent = null
 
-/** Gửi một tín hiệu "còn hoạt động" ngay lập tức (kèm tên khách nếu đã nhập). */
+/**
+ * Gửi một tín hiệu "còn hoạt động" ngay lập tức.
+ * Khách phải nhập tên trước mới được tính (trang /admin thì không cần).
+ */
 export async function beatNow() {
   if (!supabase) return
   // Tab bị ẩn hoặc khóa màn hình thì không báo, để thiết bị tự rớt khỏi danh sách
   if (document.visibilityState !== 'visible') return
+
+  const name = getVisitorName()
+  const isAdminPage = window.location.pathname.startsWith('/admin')
+  if (!name && !isAdminPage) return // chưa nhập tên: chưa tính là đang hoạt động
+
   try {
     await supabase.rpc('heartbeat', {
       p_device: getDeviceId(),
       p_path: window.location.pathname + window.location.search,
-      p_name: getVisitorName() || null,
+      p_name: name || null,
+      p_agent: navigator.userAgent || null,
     })
   } catch {
     // Lỗi mạng: bỏ qua, lần sau báo lại
