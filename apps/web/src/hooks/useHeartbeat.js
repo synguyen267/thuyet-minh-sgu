@@ -3,7 +3,7 @@ import { supabase } from '../supabase.js'
 import { getDeviceId } from '../lib/deviceId.js'
 import { getVisitorName } from '../lib/visitorName.js'
 
-const INTERVAL_MS = 30000 // báo mỗi 30 giây
+const INTERVAL_MS = 15000 // báo mỗi 30 giây
 
 let stopCurrent = null
 
@@ -32,21 +32,48 @@ export async function beatNow() {
   }
 }
 
+/** Báo "tôi rời đi" để thiết bị biến mất khỏi danh sách ngay. */
+function leaveNow() {
+  if (!supabase) return
+  try {
+    // keepalive: yêu cầu vẫn được gửi đi kể cả khi tab đang đóng
+    fetch(`${supabase.supabaseUrl}/rest/v1/rpc/leave`, {
+      method: 'POST',
+      keepalive: true,
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: supabase.supabaseKey,
+        Authorization: `Bearer ${supabase.supabaseKey}`,
+      },
+      body: JSON.stringify({ p_device: getDeviceId() }),
+    }).catch(() => {})
+  } catch {
+    // bỏ qua
+  }
+}
+
+function onVisibilityChange() {
+  if (document.visibilityState === 'hidden') leaveNow()
+  else beatNow()
+}
 /**
  * Bắt đầu báo "thiết bị này còn hoạt động" lên Supabase.
  * Gọi nhiều lần cũng chỉ chạy một bộ đếm. Trả về hàm dừng.
  */
+
 export function startHeartbeat() {
   if (!supabase) return () => {} // chưa cấu hình Supabase thì bỏ qua
   if (stopCurrent) return stopCurrent
 
-  beatNow()
+ beatNow()
   const timer = setInterval(beatNow, INTERVAL_MS)
-  document.addEventListener('visibilitychange', beatNow)
+  document.addEventListener('visibilitychange', onVisibilityChange)
+  window.addEventListener('pagehide', leaveNow)
 
   stopCurrent = () => {
     clearInterval(timer)
-    document.removeEventListener('visibilitychange', beatNow)
+    document.removeEventListener('visibilitychange', onVisibilityChange)
+    window.removeEventListener('pagehide', leaveNow)
     stopCurrent = null
   }
   return stopCurrent

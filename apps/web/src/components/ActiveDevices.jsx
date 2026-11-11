@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase.js'
 
-const REFRESH_MS = 15000
+const REFRESH_MS = 5000
 const MAX_ROWS = 20
 
 function agoText(iso) {
@@ -113,7 +113,7 @@ export default function ActiveDevices() {
           ))}
         </ul>
       )}
-      <p className="note">Chỉ tính thiết bị đã nhập tên, có tín hiệu trong 2 phút gần nhất, tự làm mới mỗi 15 giây.</p>
+      <p className="note">Chỉ tính thiết bị đã nhập tên, có tín hiệu trong 45 giây gần nhất, tự làm mới mỗi 5 giây.</p>
     </>
   )
 }
