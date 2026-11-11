@@ -20,6 +20,15 @@ const GPS_MESSAGES = {
 
 const fmtDist = (m) => (m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`);
 
+/** Link mở bản đồ ngoài: ưu tiên map_url do admin nhập, không có thì tạo từ tọa độ. */
+function directionsUrl(p) {
+  if (p.map_url) return p.map_url;
+  if (p.lat != null && p.lng != null) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`;
+  }
+  return null;
+}
+
 export default function Tour({ search, navigate }) {
   const qrId = new URLSearchParams(search).get('poi');
   const { pois: allPois, source, loading } = usePoiData();
@@ -27,6 +36,7 @@ export default function Tour({ search, navigate }) {
   const [, bump] = useState(0);
   const [running, setRunning] = useState(false);
   const [share, setShare] = useState(true);
+  const [detailId, setDetailId] = useState(null);
   const gps = useGeolocation(running);
   useWakeLock(running);
   const voices = useVoices();
@@ -78,6 +88,7 @@ export default function Tour({ search, navigate }) {
   );
   const nearest = ordered.find((p) => dist[p.id] != null) ?? null;
   const qrPoi = qrId ? pois.find((p) => p.id === qrId) : null;
+  const detailPoi = detailId ? pois.find((p) => p.id === detailId) : null;
 
   function begin() {
     unlockSpeech();
@@ -188,6 +199,24 @@ export default function Tour({ search, navigate }) {
         </section>
       )}
 
+      {detailPoi && (
+        <section className="detail">
+          <div className="row">
+            <h2>{poiName(detailPoi, lang)}</h2>
+            <button className="btn small" onClick={() => setDetailId(null)}>Đóng</button>
+          </div>
+          {detailPoi.image_url && (
+            <img className="detail-img" src={detailPoi.image_url} alt={poiName(detailPoi, lang)} loading="lazy" />
+          )}
+          <div className="row">
+            <button className="btn primary" onClick={() => listen(detailPoi.id, 'manual')}>Nghe lại</button>
+            {directionsUrl(detailPoi) && (
+              <a className="btn" href={directionsUrl(detailPoi)} target="_blank" rel="noopener noreferrer">Chỉ đường</a>
+            )}
+          </div>
+        </section>
+      )}
+
       </div>
       <aside className="tour-side">
       <h2 className="stops-title">Các điểm trong trường</h2>
@@ -197,12 +226,12 @@ export default function Tour({ search, navigate }) {
           {ordered.map((p) => (
             <li key={p.id} className={`stop${engine.visited.has(p.id) ? ' visited' : ''}${engine.current?.id === p.id ? ' playing' : ''}`}>
               <span className="stop-n">{p.tour_order}</span>
-              <span className="stop-body">
+              <button type="button" className="stop-body stop-open" onClick={() => setDetailId(p.id)}>
                 <span className="stop-name">{poiName(p, lang)}</span>
                 <span className="stop-meta">
                   {engine.visited.has(p.id) ? 'Đã nghe' : dist[p.id] != null ? `Cách ${fmtDist(dist[p.id])}` : ''}
                 </span>
-              </span>
+              </button>
               <button className="btn small" onClick={() => listen(p.id, 'manual')}>Nghe</button>
             </li>
           ))}

@@ -222,3 +222,7 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
   .qr-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .qr-item { break-inside: avoid; border-color: #999; }
 }
+.stop-open { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.detail { margin-top: 16px; padding: 16px; border-radius: 12px; background: #fff; }
+.detail .row { display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.detail-img { display: block; width: 100%; max-height: 240px; object-fit: cover; border-radius: 8px; margin: 12px 0; }
