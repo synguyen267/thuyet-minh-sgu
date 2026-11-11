@@ -2,11 +2,16 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../supabase.js'
 
 const REFRESH_MS = 15000
-const MAX_ROWS = 10
+const MAX_ROWS = 20
 
 function agoText(iso) {
   const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000))
   return s < 60 ? `${s} giây trước` : `${Math.round(s / 60)} phút trước`
+}
+
+function labelOf(r) {
+  if (r.display_name) return r.display_name
+  return r.user_id ? 'Quản trị viên' : 'Khách chưa nhập tên'
 }
 
 export default function ActiveDevices() {
@@ -41,7 +46,7 @@ export default function ActiveDevices() {
 
   if (!supabase) return null
 
-  const loggedIn = rows.filter((r) => r.user_id).length
+  const named = rows.filter((r) => r.display_name).length
 
   return (
     <>
@@ -52,8 +57,8 @@ export default function ActiveDevices() {
           <strong>{rows.length}</strong>
         </div>
         <div className="stat">
-          <span>Trong đó đã đăng nhập</span>
-          <strong>{loggedIn}</strong>
+          <span>Đã nhập tên</span>
+          <strong>{named}</strong>
         </div>
       </div>
       {rows.length > 0 && (
@@ -61,9 +66,9 @@ export default function ActiveDevices() {
           {rows.slice(0, MAX_ROWS).map((r) => (
             <li key={r.device_id}>
               <div className="poi-row static">
-                <span className="poi-name">{r.current_path || '/'}</span>
+                <span className="poi-name">{labelOf(r)}</span>
                 <span className="poi-meta">
-                  {r.device_id.slice(0, 8)}, {agoText(r.last_seen)}
+                  {r.current_path || '/'}, {agoText(r.last_seen)}
                 </span>
               </div>
             </li>
