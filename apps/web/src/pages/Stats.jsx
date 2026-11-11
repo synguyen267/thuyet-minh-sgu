@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { poiName } from '@tm/core';
 import { fetchStats } from '../data/repo.js';
+import ActiveDevices from '../components/ActiveDevices.jsx';
 
 export default function Stats({ pois }) {
   const [data, setData] = useState(null);
@@ -17,6 +18,7 @@ export default function Stats({ pois }) {
   return (
     <div className="page">
       <h2>Thống kê</h2>
+      <ActiveDevices />
       <button className="btn" onClick={load}>Tải lại</button>
       {err && <p className="note warn">Lỗi: {err}</p>}
       {!data && !err && <p className="note">Đang tải…</p>}
