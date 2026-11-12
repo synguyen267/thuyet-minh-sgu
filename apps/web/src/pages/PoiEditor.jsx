@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { LANG_CODES, poiName } from '@tm/core';
 import { LANGS } from '../speech.js';
-import { savePoi, saveTranslation, countPlays, deletePoi } from '../data/repo.js';
+import { savePoi, saveTranslation, countPlays, deletePoi, uploadMedia } from '../data/repo.js';
 import NewPoi from './NewPoi.jsx';
 
 const num = (v) => (v === '' || v == null ? null : Number(v));
+const MAX_MEDIA_MB = 10;
 
 function toForm(p) {
   return {
@@ -55,6 +56,34 @@ export default function PoiEditor({ pois, reload, writable }) {
   const setZone = (i, patch) => setForm((f) => ({ ...f, zones: f.zones.map((z, k) => (k === i ? { ...z, ...patch } : z)) }));
   const addZone = () => setForm((f) => ({ ...f, zones: [...f.zones, { lat: '', lng: '', radius_m: String(f.radius_m || 20) }] }));
   const removeZone = (i) => setForm((f) => ({ ...f, zones: f.zones.filter((_, k) => k !== i) }));
+
+  /** Chọn file ảnh hoặc audio, tải lên Storage, rồi điền đường dẫn vào ô tương ứng. */
+  async function upload(e, kind) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // cho phép chọn lại đúng file đó lần sau
+    if (!file) return;
+    setMsg('');
+    if (!file.type.startsWith(kind === 'image' ? 'image/' : 'audio/')) {
+      setMsg(`Lỗi: file không phải ${kind === 'image' ? 'ảnh' : 'audio'}.`);
+      return;
+    }
+    if (file.size > MAX_MEDIA_MB * 1024 * 1024) {
+      setMsg(`Lỗi: file quá lớn (tối đa ${MAX_MEDIA_MB} MB).`);
+      return;
+    }
+    setBusy(true);
+    try {
+      const folder = kind === 'image' ? `${sel}/image` : `${sel}/audio-${lang}`;
+      const url = await uploadMedia(file, folder);
+      if (kind === 'image') set({ image_url: url });
+      else setTr({ audio_url: url });
+      setMsg('Đã tải lên. Nhớ bấm "Lưu điểm này" để lưu đường dẫn.');
+    } catch (err) {
+      setMsg(`Lỗi: ${err.message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function save() {
     setBusy(true); setMsg('');
@@ -130,6 +159,11 @@ export default function PoiEditor({ pois, reload, writable }) {
       <button type="button" className="btn small" onClick={addZone}>Thêm vùng phụ</button>
 
       <label className="field"><span>Đường dẫn ảnh (tùy chọn)</span><input value={form.image_url} onChange={(e) => set({ image_url: e.target.value })} /></label>
+      <label className="field">
+        <span>Hoặc tải ảnh lên (JPG, PNG, WebP, tối đa {MAX_MEDIA_MB} MB)</span>
+        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => upload(e, 'image')} disabled={busy || !writable} />
+      </label>
+      {form.image_url && <img className="detail-img" src={form.image_url} alt="Xem trước ảnh điểm" />}
       <label className="field"><span>Liên kết bản đồ (tùy chọn)</span><input value={form.map_url} onChange={(e) => set({ map_url: e.target.value })} /></label>
 
       <h3>Nội dung thuyết minh</h3>
@@ -144,6 +178,11 @@ export default function PoiEditor({ pois, reload, writable }) {
       <label className="field"><span>Lời thuyết minh (đọc bằng giọng máy)</span><textarea rows={6} value={t.tts_script} onChange={(e) => setTr({ tts_script: e.target.value })} /></label>
       <label className="field"><span>Đường dẫn file audio (tùy chọn, ưu tiên hơn giọng máy)</span><input value={t.audio_url} onChange={(e) => setTr({ audio_url: e.target.value })} /></label>
       <label className="field">
+        <span>Hoặc tải audio lên cho ngôn ngữ này (MP3, M4A, WAV, tối đa {MAX_MEDIA_MB} MB)</span>
+        <input type="file" accept="audio/mpeg,audio/mp4,audio/wav" onChange={(e) => upload(e, 'audio')} disabled={busy || !writable} />
+      </label>
+      {t.audio_url && <audio controls src={t.audio_url} style={{ width: '100%', margin: '8px 0' }} />}
+      <label className="field">
         <span>Trạng thái</span>
         <select value={t.status} onChange={(e) => setTr({ status: e.target.value })}>
           <option value="draft">Bản nháp (khách chưa thấy)</option>
@@ -151,13 +190,13 @@ export default function PoiEditor({ pois, reload, writable }) {
         </select>
       </label>
 
-      <button className="btn primary block" onClick={save} disabled={busy || !writable}>{busy ? 'Đang lưu…' : 'Lưu điểm này'}</button>
+      <button className="btn primary block" onClick={save} disabled={busy || !writable}>{busy ? 'Đang xử lý…' : 'Lưu điểm này'}</button>
       {!writable && <p className="note warn">Đang dùng dữ liệu mẫu nên chưa lưu được vào CSDL.</p>}
       {msg && <p className={`note ${msg.startsWith('Lỗi') ? 'warn' : 'ok'}`} role="status">{msg}</p>}
       <h3>Xóa điểm</h3>
       <p className="note">Ẩn điểm (bỏ tick "Hiện cho khách") thì khách không thấy nhưng dữ liệu còn nguyên. Chỉ xóa hẳn được điểm chưa có lượt nghe nào.</p>
       <button className="btn danger" onClick={removePoi} disabled={busy || !writable}>Xóa điểm này</button>
-      <p className="note">Tải ảnh và audio lên kho lưu trữ, cùng AI soạn nháp, sẽ có ở bước sau. Hiện bạn dán đường dẫn vào các ô trên.</p>
+      <p className="note">AI soạn nháp sẽ có ở bước sau.</p>
     </div>
   );
 }

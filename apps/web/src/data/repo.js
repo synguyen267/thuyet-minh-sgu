@@ -122,3 +122,22 @@ export async function deletePoi(id) {
   const { error } = await supabase.from('poi').delete().eq('id', id);
   check(error);
 }
+
+// ---------- Tải ảnh / audio lên Storage (quản trị) ----------
+const MEDIA_BUCKET = 'poi-media';
+
+/**
+ * Tải một file lên bucket poi-media rồi trả về đường dẫn công khai.
+ * Tên file có mốc thời gian nên không bao giờ trùng, không cần quyền ghi đè.
+ * Quyền tải lên do policy của Storage kiểm tra (chỉ admin).
+ */
+export async function uploadMedia(file, folder) {
+  const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await supabase.storage
+    .from(MEDIA_BUCKET)
+    .upload(path, file, { contentType: file.type, cacheControl: '31536000' });
+  check(error);
+  const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
