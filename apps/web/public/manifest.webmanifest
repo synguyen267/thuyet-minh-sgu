@@ -1,0 +1,16 @@
+{
+  "name": "Thuyết minh Đại học Sài Gòn",
+  "short_name": "Thuyết minh SGU",
+  "description": "Đi tới đâu, nghe tới đó: thuyết minh tự động trong khuôn viên Đại học Sài Gòn.",
+  "lang": "vi",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f5f6",
+  "theme_color": "#0b6b74",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
