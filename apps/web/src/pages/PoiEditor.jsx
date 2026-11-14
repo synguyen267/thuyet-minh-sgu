@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { LANG_CODES, poiName } from '@tm/core';
 import { LANGS } from '../speech.js';
-import { savePoi, saveTranslation, countPlays, deletePoi, uploadMedia } from '../data/repo.js';
+import { savePoi, saveTranslation, countPlays, deletePoi, uploadMedia, callAi } from '../data/repo.js';
 import NewPoi from './NewPoi.jsx';
 
 const num = (v) => (v === '' || v == null ? null : Number(v));
@@ -26,6 +26,8 @@ export default function PoiEditor({ pois, reload, writable }) {
   const [form, setForm] = useState(null);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [notes, setNotes] = useState('');
 
   const poi = pois.find((p) => p.id === sel);
   useEffect(() => { if (poi) setForm(toForm(poi)); }, [sel, pois]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -82,6 +84,48 @@ export default function PoiEditor({ pois, reload, writable }) {
       setMsg(`Lỗi: ${err.message}`);
     } finally {
       setBusy(false);
+    }
+  }
+
+  /** AI soạn nháp tiếng Việt từ tên điểm và ý chính. Kết quả luôn là bản nháp, chưa lưu. */
+  async function aiDraft() {
+    const vi = form.tr.vi;
+    if (!vi.name.trim()) { setMsg('Lỗi: nhập tên tiếng Việt của điểm trước khi nhờ AI soạn.'); return; }
+    if (vi.tts_script.trim() && !window.confirm('Ô lời thuyết minh tiếng Việt đang có nội dung. Ghi đè bằng bản AI soạn?')) return;
+    setAiBusy(true); setMsg('');
+    try {
+      const r = await callAi({ action: 'draft', name: vi.name.trim(), notes: notes.trim() });
+      setForm((f) => ({ ...f, tr: { ...f.tr, vi: { ...f.tr.vi, tts_script: r.text, status: 'draft' } } }));
+      setMsg('AI đã soạn xong bản nháp tiếng Việt. Hãy đọc lại, sửa nếu cần, rồi bấm "Lưu điểm này".');
+    } catch (e) {
+      setMsg(`Lỗi: ${e.message}`);
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
+  /** AI dịch từ tiếng Việt sang các ngôn ngữ còn lại. Kết quả luôn là bản nháp, chưa lưu. */
+  async function aiTranslate() {
+    const vi = form.tr.vi;
+    const targets = LANG_CODES.filter((l) => l !== 'vi');
+    if (!vi.name.trim() || !vi.tts_script.trim()) { setMsg('Lỗi: cần có tên và lời thuyết minh tiếng Việt trước khi nhờ AI dịch.'); return; }
+    if (targets.some((l) => form.tr[l].tts_script.trim())
+      && !window.confirm('Một số ngôn ngữ đã có nội dung. Ghi đè bằng bản AI dịch (chuyển về bản nháp, khách sẽ không thấy cho tới khi bạn duyệt lại)?')) return;
+    setAiBusy(true); setMsg('');
+    try {
+      const r = await callAi({ action: 'translate', name: vi.name.trim(), text: vi.tts_script.trim(), targets });
+      setForm((f) => {
+        const tr = { ...f.tr };
+        for (const l of targets) {
+          if (r[l]?.name && r[l]?.text) tr[l] = { ...tr[l], name: r[l].name, tts_script: r[l].text, status: 'draft' };
+        }
+        return { ...f, tr };
+      });
+      setMsg('AI đã dịch xong sang các ngôn ngữ còn lại (đều là bản nháp). Xem lại từng ngôn ngữ, rồi bấm "Lưu điểm này".');
+    } catch (e) {
+      setMsg(`Lỗi: ${e.message}`);
+    } finally {
+      setAiBusy(false);
     }
   }
 
@@ -174,6 +218,21 @@ export default function PoiEditor({ pois, reload, writable }) {
           </button>
         ))}
       </div>
+      <div className="field">
+        <span>Trợ lý AI (chỉ soạn bản nháp)</span>
+        {lang === 'vi' && (
+          <>
+            <textarea rows={3} value={notes} placeholder="Ý chính để AI soạn, ví dụ: khu giảng đường chính, có thư viện ở tầng trệt (không bắt buộc)" onChange={(e) => setNotes(e.target.value)} />
+            <button type="button" className="btn small" onClick={aiDraft} disabled={busy || aiBusy || !writable}>
+              {aiBusy ? 'AI đang làm…' : 'AI soạn nháp tiếng Việt'}
+            </button>
+          </>
+        )}
+        <button type="button" className="btn small" onClick={aiTranslate} disabled={busy || aiBusy || !writable}>
+          {aiBusy ? 'AI đang làm…' : 'AI dịch từ tiếng Việt sang các ngôn ngữ còn lại'}
+        </button>
+        <p className="note">AI chỉ tạo bản nháp. Bạn đọc lại và sửa, rồi đổi Trạng thái sang "Đã duyệt" thì khách mới nghe được.</p>
+      </div>
       <label className="field"><span>Tên điểm</span><input value={t.name} onChange={(e) => setTr({ name: e.target.value })} /></label>
       <label className="field"><span>Lời thuyết minh (đọc bằng giọng máy)</span><textarea rows={6} value={t.tts_script} onChange={(e) => setTr({ tts_script: e.target.value })} /></label>
       <label className="field"><span>Đường dẫn file audio (tùy chọn, ưu tiên hơn giọng máy)</span><input value={t.audio_url} onChange={(e) => setTr({ audio_url: e.target.value })} /></label>
@@ -190,13 +249,12 @@ export default function PoiEditor({ pois, reload, writable }) {
         </select>
       </label>
 
-      <button className="btn primary block" onClick={save} disabled={busy || !writable}>{busy ? 'Đang xử lý…' : 'Lưu điểm này'}</button>
+      <button className="btn primary block" onClick={save} disabled={busy || aiBusy || !writable}>{busy ? 'Đang xử lý…' : 'Lưu điểm này'}</button>
       {!writable && <p className="note warn">Đang dùng dữ liệu mẫu nên chưa lưu được vào CSDL.</p>}
       {msg && <p className={`note ${msg.startsWith('Lỗi') ? 'warn' : 'ok'}`} role="status">{msg}</p>}
       <h3>Xóa điểm</h3>
       <p className="note">Ẩn điểm (bỏ tick "Hiện cho khách") thì khách không thấy nhưng dữ liệu còn nguyên. Chỉ xóa hẳn được điểm chưa có lượt nghe nào.</p>
       <button className="btn danger" onClick={removePoi} disabled={busy || !writable}>Xóa điểm này</button>
-      <p className="note">AI soạn nháp sẽ có ở bước sau.</p>
     </div>
   );
 }
