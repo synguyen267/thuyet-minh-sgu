@@ -240,6 +240,8 @@ export async function callAi(payload) {
     body: JSON.stringify(payload),
   });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error || `Lỗi ${res.status}`);
+  if (!res.ok) {
+    throw new Error(json.error || (res.status === 504 ? 'Máy chủ AI phản hồi quá lâu. Hãy bấm thử lại.' : `Lỗi ${res.status}`));
+  }
   return json.result;
 }

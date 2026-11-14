@@ -2,8 +2,6 @@
 // Khóa Gemini chỉ nằm ở biến môi trường GEMINI_API_KEY trên Vercel, không bao giờ đưa xuống trình duyệt.
 // Chỉ tài khoản quản trị (hàm is_admin() của Supabase) mới gọi được.
 
-export const config = { maxDuration: 30 };
-
 const LANG_NAMES = { vi: 'tiếng Việt', en: 'English', zh: 'Chinese (Simplified, 简体中文)', ja: 'Japanese (日本語)', ko: 'Korean (한국어)' };
 const LANGS = Object.keys(LANG_NAMES);
 const MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
@@ -26,20 +24,38 @@ async function isAdmin(token) {
   }
 }
 
-/** Gọi Gemini, ép trả về JSON rồi đọc ra đối tượng. */
-async function gemini(system, user) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function request(system, user, thinking) {
+  const generationConfig = { responseMimeType: 'application/json', temperature: 0.6 };
+  if (thinking) generationConfig.thinkingConfig = { thinkingLevel: 'low' }; // ít suy nghĩ cho nhanh, đủ cho việc dịch và soạn ngắn
   const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: system }] },
       contents: [{ role: 'user', parts: [{ text: user }] }],
-      generationConfig: { responseMimeType: 'application/json', temperature: 0.6 },
+      generationConfig,
     }),
   });
   const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data?.error?.message || `Gemini trả về lỗi ${r.status}`);
-  const raw = (data.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? '').join('').trim();
+  return { ok: r.ok, status: r.status, data };
+}
+
+/** Gọi Gemini, ép trả về JSON rồi đọc ra đối tượng. Model không nhận cấu hình suy nghĩ thì thử lại không có; lỗi tạm thời thì thử lại một lần. */
+async function gemini(system, user) {
+  let thinking = true;
+  let r = await request(system, user, thinking);
+  if (r.status === 400 && thinking) {
+    thinking = false;
+    r = await request(system, user, thinking);
+  }
+  if ([429, 500, 503].includes(r.status)) {
+    await sleep(1200);
+    r = await request(system, user, thinking);
+  }
+  if (!r.ok) throw new Error(r.data?.error?.message || `Gemini trả về lỗi ${r.status}`);
+  const raw = (r.data.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? '').join('').trim();
   const clean = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
   try {
     return JSON.parse(clean);
@@ -69,28 +85,28 @@ async function draft(body) {
   return { text };
 }
 
+/** Dịch sang một ngôn ngữ. Mỗi ngôn ngữ một yêu cầu riêng, chạy song song nên tổng thời gian chỉ bằng ngôn ngữ chậm nhất. */
+async function translateOne(lang, name, text) {
+  const system =
+    `Bạn là người dịch lời thuyết minh du lịch từ tiếng Việt sang ${LANG_NAMES[lang]}. ` +
+    'Bản dịch sẽ được máy đọc thành tiếng, nên viết tự nhiên, câu ngắn, giữ nguyên ý nghĩa, không thêm hay bớt thông tin, ' +
+    'không dùng markdown hay emoji. Giữ nguyên tên riêng (ví dụ Đại học Sài Gòn) theo cách gọi thông dụng của ngôn ngữ đích. ' +
+    'Trả về JSON đúng dạng {"name": "<tên điểm đã dịch>", "text": "<lời thuyết minh đã dịch>"} và không gì khác.';
+  const out = await gemini(system, `Tên điểm: ${name}\nLời thuyết minh:\n${text}`);
+  const n = str(out?.name, 100);
+  const t = str(out?.text, 6000);
+  if (!n || !t) throw new Error(`AI chưa dịch được sang ${LANG_NAMES[lang]}. Hãy bấm thử lại.`);
+  return { name: n, text: t };
+}
+
 async function translate(body) {
   const name = str(body.name, 100);
   const text = str(body.text, 4000);
   const targets = Array.isArray(body.targets) ? body.targets.filter((l) => LANGS.includes(l) && l !== 'vi') : [];
   if (!name || !text) throw new Error('Cần có tên và lời thuyết minh tiếng Việt để dịch.');
   if (targets.length === 0) throw new Error('Chưa chọn ngôn ngữ cần dịch.');
-  const list = targets.map((l) => `"${l}" = ${LANG_NAMES[l]}`).join('; ');
-  const system =
-    'Bạn là người dịch lời thuyết minh du lịch từ tiếng Việt sang các ngôn ngữ khác. ' +
-    'Bản dịch sẽ được máy đọc thành tiếng, nên viết tự nhiên, câu ngắn, giữ nguyên ý nghĩa, không thêm hay bớt thông tin, ' +
-    'không dùng markdown hay emoji. Giữ nguyên tên riêng (ví dụ Đại học Sài Gòn) theo cách gọi thông dụng của ngôn ngữ đích. ' +
-    `Các ngôn ngữ cần dịch: ${list}. ` +
-    'Trả về JSON đúng dạng {"<mã ngôn ngữ>": {"name": "<tên điểm đã dịch>", "text": "<lời thuyết minh đã dịch>"}} với đủ các mã yêu cầu và không gì khác.';
-  const out = await gemini(system, `Tên điểm: ${name}\nLời thuyết minh:\n${text}`);
-  const result = {};
-  for (const l of targets) {
-    const n = str(out?.[l]?.name, 100);
-    const t = str(out?.[l]?.text, 6000);
-    if (!n || !t) throw new Error(`AI chưa dịch được sang ${LANG_NAMES[l]}. Hãy bấm thử lại.`);
-    result[l] = { name: n, text: t };
-  }
-  return result;
+  const entries = await Promise.all(targets.map(async (l) => [l, await translateOne(l, name, text)]));
+  return Object.fromEntries(entries);
 }
 
 export default async function handler(req, res) {
