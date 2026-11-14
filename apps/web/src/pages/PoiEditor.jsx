@@ -3,6 +3,7 @@ import { LANG_CODES, poiName } from '@tm/core';
 import { LANGS } from '../speech.js';
 import { savePoi, saveTranslation, countPlays, deletePoi, uploadMedia, callAi } from '../data/repo.js';
 import NewPoi from './NewPoi.jsx';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
 
 const num = (v) => (v === '' || v == null ? null : Number(v));
 const MAX_MEDIA_MB = 10;
@@ -28,18 +29,38 @@ export default function PoiEditor({ pois, reload, writable }) {
   const [busy, setBusy] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
   const [notes, setNotes] = useState('');
+  const [confirmBox, setConfirmBox] = useState(null); // hộp xác nhận đang mở (hoặc null)
 
   const poi = pois.find((p) => p.id === sel);
   useEffect(() => { if (poi) setForm(toForm(poi)); }, [sel, pois]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!poi || !form) return <div className="page"><p className="empty">Chưa có điểm nào.</p></div>;
 
+  /** Mở hộp xác nhận trong trang. Bấm đồng ý thì đóng hộp rồi chạy onConfirm. */
+  function ask(opts) { setConfirmBox(opts); }
+
   async function removePoi() {
     setBusy(true); setMsg('');
     try {
       const n = await countPlays(sel);
       if (n > 0) throw new Error(`điểm này đã có ${n} lượt nghe. Hãy bỏ tick "Hiện cho khách" để ẩn thay vì xóa, để giữ số liệu.`);
-      if (!window.confirm(`Xóa hẳn điểm "${poiName(poi)}"? Việc này không hoàn tác được và mã QR của điểm sẽ hỏng.`)) return;
+      ask({
+        title: 'Xóa hẳn điểm này?',
+        message: `Điểm "${poiName(poi)}" sẽ bị xóa vĩnh viễn, không hoàn tác được và mã QR của điểm sẽ hỏng.`,
+        confirmLabel: 'Xóa điểm',
+        danger: true,
+        onConfirm: doRemove,
+      });
+    } catch (e) {
+      setMsg(`Lỗi: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function doRemove() {
+    setBusy(true); setMsg('');
+    try {
       await deletePoi(sel);
       const other = pois.find((x) => x.id !== sel);
       await reload();
@@ -88,10 +109,23 @@ export default function PoiEditor({ pois, reload, writable }) {
   }
 
   /** AI soạn nháp tiếng Việt từ tên điểm và ý chính. Kết quả luôn là bản nháp, chưa lưu. */
-  async function aiDraft() {
+  function aiDraft() {
     const vi = form.tr.vi;
     if (!vi.name.trim()) { setMsg('Lỗi: nhập tên tiếng Việt của điểm trước khi nhờ AI soạn.'); return; }
-    if (vi.tts_script.trim() && !window.confirm('Ô lời thuyết minh tiếng Việt đang có nội dung. Ghi đè bằng bản AI soạn?')) return;
+    if (vi.tts_script.trim()) {
+      ask({
+        title: 'Ghi đè lời thuyết minh tiếng Việt?',
+        message: 'Ô lời thuyết minh tiếng Việt đang có nội dung. Bản AI soạn sẽ thay thế nội dung đó. Chưa có gì được lưu cho tới khi bạn bấm "Lưu điểm này".',
+        confirmLabel: 'Ghi đè bằng bản AI',
+        onConfirm: runDraft,
+      });
+      return;
+    }
+    runDraft();
+  }
+
+  async function runDraft() {
+    const vi = form.tr.vi;
     setAiBusy(true); setMsg('');
     try {
       const r = await callAi({ action: 'draft', name: vi.name.trim(), notes: notes.trim() });
@@ -105,12 +139,25 @@ export default function PoiEditor({ pois, reload, writable }) {
   }
 
   /** AI dịch từ tiếng Việt sang các ngôn ngữ còn lại. Kết quả luôn là bản nháp, chưa lưu. */
-  async function aiTranslate() {
+  function aiTranslate() {
+    const vi = form.tr.vi;
+    if (!vi.name.trim() || !vi.tts_script.trim()) { setMsg('Lỗi: cần có tên và lời thuyết minh tiếng Việt trước khi nhờ AI dịch.'); return; }
+    const filled = LANGS.filter((l) => l.code !== 'vi' && form.tr[l.code].tts_script.trim()).map((l) => l.label);
+    if (filled.length > 0) {
+      ask({
+        title: 'Ghi đè các bản dịch đang có?',
+        message: `${filled.join(', ')} đã có nội dung. Bản AI dịch sẽ thay thế và đưa các ngôn ngữ này về "Bản nháp", nên khách sẽ không nghe được cho tới khi bạn duyệt lại. Chưa có gì được lưu cho tới khi bạn bấm "Lưu điểm này".`,
+        confirmLabel: 'Ghi đè bằng bản AI',
+        onConfirm: runTranslate,
+      });
+      return;
+    }
+    runTranslate();
+  }
+
+  async function runTranslate() {
     const vi = form.tr.vi;
     const targets = LANG_CODES.filter((l) => l !== 'vi');
-    if (!vi.name.trim() || !vi.tts_script.trim()) { setMsg('Lỗi: cần có tên và lời thuyết minh tiếng Việt trước khi nhờ AI dịch.'); return; }
-    if (targets.some((l) => form.tr[l].tts_script.trim())
-      && !window.confirm('Một số ngôn ngữ đã có nội dung. Ghi đè bằng bản AI dịch (chuyển về bản nháp, khách sẽ không thấy cho tới khi bạn duyệt lại)?')) return;
     setAiBusy(true); setMsg('');
     try {
       const r = await callAi({ action: 'translate', name: vi.name.trim(), text: vi.tts_script.trim(), targets });
@@ -255,6 +302,16 @@ export default function PoiEditor({ pois, reload, writable }) {
       <h3>Xóa điểm</h3>
       <p className="note">Ẩn điểm (bỏ tick "Hiện cho khách") thì khách không thấy nhưng dữ liệu còn nguyên. Chỉ xóa hẳn được điểm chưa có lượt nghe nào.</p>
       <button className="btn danger" onClick={removePoi} disabled={busy || !writable}>Xóa điểm này</button>
+      {confirmBox && (
+        <ConfirmDialog
+          title={confirmBox.title}
+          message={confirmBox.message}
+          confirmLabel={confirmBox.confirmLabel}
+          danger={confirmBox.danger}
+          onCancel={() => setConfirmBox(null)}
+          onConfirm={() => { const run = confirmBox.onConfirm; setConfirmBox(null); run(); }}
+        />
+      )}
     </div>
   );
 }
