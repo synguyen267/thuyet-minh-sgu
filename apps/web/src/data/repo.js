@@ -1,28 +1,90 @@
 import sample from '@tm/core/data/pois.sample.json';
 import { sortByTour, shapePoiRow } from '@tm/core';
 import { supabase } from '../supabase.js';
+import { readAll, putMany, removeMany } from './offlineStore.js';
 
 function sampleResult(error) {
   const pois = sortByTour(sample.pois.map((p) => ({ ...p, audio: {}, status: {}, description: {} })));
   return { pois, source: 'sample', error: error ?? null };
 }
 
+/** Dấu vân tay của một điểm: đổi khi điểm hoặc bất kỳ bản dịch nào được sửa (so theo updated_at). */
+function sigOf(r) {
+  const tr = r.poi_translation ?? [];
+  const latest = tr.reduce((m, t) => ((t.updated_at ?? '') > m ? t.updated_at : m), '');
+  return `${r.updated_at ?? ''}|${tr.length}|${latest}`;
+}
+
+/** Tải toàn bộ điểm (dùng khi không so sánh được theo updated_at) rồi lưu lại trên máy. */
+async function fullFetch() {
+  const { data, error } = await supabase
+    .from('poi')
+    .select('*, poi_translation(*)')
+    .order('tour_order', { ascending: true });
+  if (error) throw new Error(error.message);
+  const rows = data ?? [];
+  await putMany(rows.map((r) => ({ id: r.id, sig: sigOf(r), row: r })));
+  const remote = new Set(rows.map((r) => r.id));
+  const stale = (await readAll()).filter((r) => !remote.has(r.id)).map((r) => r.id);
+  if (stale.length) await removeMany(stale);
+  return rows;
+}
+
 /**
- * Tải điểm từ Supabase (RLS tự quyết định thấy gì: khách thấy bản đã duyệt, admin thấy tất cả).
- * Lỗi mạng hoặc CSDL trống thì dùng dữ liệu mẫu trong repo để trang không bị trắng.
+ * Đồng bộ theo updated_at (FR-14, BR-10): hỏi server danh sách nhẹ (id + mốc cập nhật),
+ * chỉ tải đầy đủ các điểm mới hoặc đã sửa, bỏ khỏi máy các điểm đã ẩn hoặc xóa.
+ * Trả về danh sách điểm thô đã đồng bộ.
  */
-export async function loadPois() {
-  if (!supabase) return sampleResult('Chưa cấu hình Supabase');
-  try {
-    const { data, error } = await supabase
+async function syncFromServer() {
+  const { data: stamps, error } = await supabase
+    .from('poi')
+    .select('id, updated_at, poi_translation(updated_at)')
+    .order('tour_order', { ascending: true });
+  if (error) return fullFetch(); // không so sánh được thì tải hết như trước
+
+  const local = await readAll();
+  const localById = new Map(local.map((r) => [r.id, r]));
+  const remoteIds = new Set(stamps.map((s) => s.id));
+  const changed = stamps.filter((s) => localById.get(s.id)?.sig !== sigOf(s)).map((s) => s.id);
+  const removed = local.filter((r) => !remoteIds.has(r.id)).map((r) => r.id);
+
+  let fetched = [];
+  if (changed.length) {
+    const { data, error: e2 } = await supabase
       .from('poi')
       .select('*, poi_translation(*)')
-      .order('tour_order', { ascending: true });
-    if (error) return sampleResult(error.message);
-    if (!data?.length) return sampleResult('CSDL chưa có điểm nào');
-    return { pois: sortByTour(data.map(shapePoiRow)), source: 'supabase', error: null };
+      .in('id', changed);
+    if (e2) throw new Error(e2.message);
+    fetched = data ?? [];
+    await putMany(fetched.map((r) => ({ id: r.id, sig: sigOf(r), row: r })));
+  }
+  if (removed.length) await removeMany(removed);
+
+  const fetchedById = new Map(fetched.map((r) => [r.id, r]));
+  return stamps.map((s) => fetchedById.get(s.id) ?? localById.get(s.id)?.row).filter(Boolean);
+}
+
+/** Mất mạng hoặc lỗi: dùng điểm đã lưu trên máy, chưa có gì thì mới dùng dữ liệu mẫu. */
+async function offlineOrSample(error) {
+  const saved = await readAll();
+  if (saved.length) {
+    return { pois: sortByTour(saved.map((r) => shapePoiRow(r.row))), source: 'offline', error: error ?? null };
+  }
+  return sampleResult(error);
+}
+
+/**
+ * Tải điểm từ Supabase (RLS tự quyết định thấy gì: khách thấy bản đã duyệt, admin thấy tất cả).
+ * Có mạng thì đồng bộ và lưu vào máy; lỗi mạng thì dùng bản đã lưu; chưa có gì thì dùng dữ liệu mẫu.
+ */
+export async function loadPois() {
+  if (!supabase) return offlineOrSample('Chưa cấu hình Supabase');
+  try {
+    const rows = await syncFromServer();
+    if (!rows.length) return sampleResult('CSDL chưa có điểm nào');
+    return { pois: sortByTour(rows.map(shapePoiRow)), source: 'supabase', error: null };
   } catch (e) {
-    return sampleResult(e.message);
+    return offlineOrSample(e.message);
   }
 }
 

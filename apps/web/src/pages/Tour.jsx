@@ -123,6 +123,7 @@ export default function Tour({ search, navigate }) {
         </label>
         {noVoice && <p className="note">Thiết bị chưa có giọng đọc cho ngôn ngữ này. Trang sẽ hiện chữ thay cho giọng nói.</p>}
         {!loading && source === 'sample' && <p className="note">Đang dùng dữ liệu tạm. Một số nội dung có thể chưa cập nhật.</p>}
+        {!loading && source === 'offline' && <p className="note">Đang không có mạng: dùng dữ liệu đã lưu trên máy.</p>}
       </header>
 
       {qrId && (
