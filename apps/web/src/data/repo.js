@@ -224,3 +224,22 @@ export async function uploadMedia(file, folder) {
   const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path);
   return data.publicUrl;
 }
+
+// ---------- AI soạn nháp và dịch (quản trị) ----------
+/**
+ * Gọi hàm máy chủ /api/ai (khóa Gemini nằm trên Vercel). Gửi kèm token đăng nhập để máy chủ kiểm tra là admin.
+ * payload: { action: 'draft', name, notes } hoặc { action: 'translate', name, text, targets }.
+ */
+export async function callAi(payload) {
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+  if (!token) throw new Error('Hãy đăng nhập lại bằng tài khoản quản trị.');
+  const res = await fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || `Lỗi ${res.status}`);
+  return json.result;
+}
