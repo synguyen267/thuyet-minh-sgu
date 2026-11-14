@@ -10,6 +10,7 @@ import { useNarrationEngine } from '../hooks/useNarrationEngine.js';
 import { LANGS, getSavedVoice, saveVoice, unlockSpeech, voicesFor } from '../speech.js';
 import { logTrack } from '../data/repo.js';
 import MapView from '../components/MapView.jsx';
+import { clearPack, downloadPack, mediaUrlsFor, readPackInfo } from '../data/offlinePack.js';
 
 const GPS_MESSAGES = {
   asking: 'Đang chờ bạn cho phép vị trí. Nếu trình duyệt hỏi, hãy chọn Cho phép.',
@@ -18,6 +19,7 @@ const GPS_MESSAGES = {
   error: 'Chưa lấy được vị trí. Hãy ra chỗ thoáng. Bạn vẫn nghe được bằng nút Nghe ở từng điểm.',
 };
 
+const fmtMB = (b) => `${(b / 1048576).toFixed(1)} MB`;
 const fmtDist = (m) => (m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`);
 
 /** Link mở bản đồ ngoài: ưu tiên map_url do admin nhập, không có thì tạo từ tọa độ. */
@@ -37,6 +39,9 @@ export default function Tour({ search, navigate }) {
   const [running, setRunning] = useState(false);
   const [share, setShare] = useState(true);
   const [detailId, setDetailId] = useState(null);
+  const [pack, setPack] = useState(readPackInfo);
+  const [packBusy, setPackBusy] = useState(null);
+  const [packMsg, setPackMsg] = useState('');
   const gps = useGeolocation(running);
   useWakeLock(running);
   const voices = useVoices();
@@ -104,6 +109,30 @@ export default function Tour({ search, navigate }) {
   function listen(id, src) {
     unlockSpeech();
     engine.request(id, src);
+  }
+
+  async function downloadOffline() {
+    setPackMsg('');
+    const urls = mediaUrlsFor(pois, lang);
+    if (urls.length === 0) {
+      setPackMsg('Chưa có ảnh hay audio nào để tải. Thuyết minh vẫn dùng được khi không có mạng nhờ giọng đọc của máy.');
+      return;
+    }
+    setPackBusy({ done: 0, total: urls.length, bytes: 0 });
+    try {
+      const r = await downloadPack(urls, (p) => setPackBusy({ ...p, total: urls.length }));
+      setPack(readPackInfo());
+      setPackMsg(r.failed ? `Đã tải xong nhưng ${r.failed} file bị lỗi. Hãy thử lại khi mạng tốt hơn.` : 'Đã tải xong gói offline.');
+    } catch (e) {
+      setPackMsg(`Lỗi: ${e.message}`);
+    } finally {
+      setPackBusy(null);
+    }
+  }
+  async function removeOffline() {
+    await clearPack();
+    setPack(null);
+    setPackMsg('Đã xóa gói offline.');
   }
 
   const langVoices = voicesFor(lang, voices);
@@ -265,6 +294,20 @@ export default function Tour({ search, navigate }) {
             </select>
           </label>
         )}
+        <div className="field">
+          <span>Dùng khi không có mạng</span>
+          <button type="button" className="btn small" onClick={downloadOffline} disabled={!!packBusy}>
+            {packBusy ? `Đang tải ${packBusy.done}/${packBusy.total} file (${fmtMB(packBusy.bytes)})…` : 'Tải gói offline'}
+          </button>
+          {pack && !packBusy && (
+            <p className="note">
+              Đã lưu {pack.count} file, {fmtMB(pack.bytes)} (lúc {new Date(pack.at).toLocaleString('vi-VN')}).{' '}
+              <button type="button" className="btn small" onClick={removeOffline}>Xóa gói offline</button>
+            </p>
+          )}
+          {packMsg && <p className={`note${packMsg.startsWith('Lỗi') ? ' warn' : ''}`} role="status">{packMsg}</p>}
+          <p className="note">Tải trước ảnh và audio của các điểm (theo ngôn ngữ đang chọn) để dùng khi sóng yếu. Nên tải bằng wifi.</p>
+        </div>
       </details>
       </aside>
       </div>
