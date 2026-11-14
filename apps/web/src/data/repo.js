@@ -160,6 +160,27 @@ export async function fetchStats() {
   return { top: top.data, avg: avg.data, totalPlays: plays.count ?? 0, totalTracks: tracks.count ?? 0, heat: heat.data };
 }
 
+/**
+ * Toàn bộ ô vị trí của view v_heat để vẽ bản đồ nhiệt (Supabase trả tối đa 1000 dòng mỗi lần nên đọc từng trang).
+ * Sắp theo số lượt giảm dần; chỉ lấy tối đa maxRows ô nhiều nhất.
+ */
+export async function fetchHeat(maxRows = 5000) {
+  const rows = [];
+  for (let from = 0; from < maxRows; from += 1000) {
+    const { data, error } = await supabase
+      .from('v_heat')
+      .select('lat, lng, hits')
+      .order('hits', { ascending: false })
+      .order('lat')
+      .order('lng')
+      .range(from, from + 999);
+    check(error);
+    rows.push(...(data ?? []));
+    if (!data || data.length < 1000) break;
+  }
+  return rows;
+}
+
 // ---------- Thêm / xóa điểm (quản trị) ----------
 /** Tạo điểm mới ở trạng thái ẨN (khách chưa thấy) kèm tên tiếng Việt dạng bản nháp. */
 export async function createPoi({ id, name_vi, tour_order, radius_m, priority }) {

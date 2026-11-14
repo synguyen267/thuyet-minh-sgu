@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { poiName } from '@tm/core';
-import { fetchStats } from '../data/repo.js';
+import { fetchHeat, fetchStats } from '../data/repo.js';
 import ActiveDevices from '../components/ActiveDevices.jsx';
+import HeatMap from '../components/HeatMap.jsx';
 
 export default function Stats({ pois }) {
   const [data, setData] = useState(null);
+  const [heat, setHeat] = useState(null);
   const [err, setErr] = useState('');
   const load = useCallback(async () => {
     setErr('');
     try { setData(await fetchStats()); } catch (e) { setErr(e.message); }
+    try { setHeat(await fetchHeat()); } catch { setHeat([]); } // lỗi bản đồ nhiệt không làm hỏng phần thống kê khác
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -39,6 +42,8 @@ export default function Stats({ pois }) {
               ))}
             </ul>
           )}
+          <h3>Bản đồ nhiệt</h3>
+          {heat === null ? <p className="note">Đang tải bản đồ…</p> : <HeatMap cells={heat} pois={pois} />}
           <h3>Nơi khách hay đứng (10 ô nhiều nhất)</h3>
           {data.heat.length === 0 ? <p className="note">Chưa có dữ liệu vị trí.</p> : (
             <ol className="log">
