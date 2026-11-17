@@ -26,10 +26,15 @@ export function numInRange(v, min, max, label) {
   return n;
 }
 
-/** Đường dẫn http(s) hoặc null. Chặn javascript: và các kiểu khác vì giá trị này được dùng làm href và src. */
+/**
+ * Đường dẫn http(s), hoặc đường dẫn tương đối của chính trang (bắt đầu bằng đúng một dấu /), hoặc null.
+ * Chặn javascript:, data: và // (địa chỉ không rõ giao thức) vì giá trị này được dùng làm href và src.
+ */
 export function urlOrNull(v, label) {
   if (v == null || v === '') return null;
   const s = text(v, { max: 1000, label });
-  if (!/^https?:\/\//i.test(s)) throw badRequest(`${label} phải bắt đầu bằng http:// hoặc https://.`);
+  if (!/^https?:\/\//i.test(s) && !/^\/(?!\/)/.test(s)) {
+    throw badRequest(`${label} phải bắt đầu bằng http://, https:// hoặc một dấu /.`);
+  }
   return s;
 }

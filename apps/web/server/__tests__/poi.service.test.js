@@ -74,6 +74,9 @@ test('sửa điểm: đường dẫn ảnh và bản đồ chỉ nhận http(s),
   await rejectsWith(svc(repo).update('t', 'a', { image_url: 'data:text/html,x' }), 400, /http/);
   await svc(repo).update('t', 'a', { image_url: 'https://x.co/a.jpg', map_url: '' });
   assert.deepEqual(calls[0], ['updatePoi', 'a', { image_url: 'https://x.co/a.jpg', map_url: null }]);
+  await rejectsWith(svc(repo).update('t', 'a', { image_url: '//evil.com/x.jpg' }), 400, /http/);
+  await svc(repo).update('t', 'a', { image_url: '/images/cong-chinh.jpg' }); // đường dẫn tương đối của chính trang vẫn được nhận
+  assert.deepEqual(calls[1], ['updatePoi', 'a', { image_url: '/images/cong-chinh.jpg' }]);
 });
 
 test('lưu bản dịch: kiểm tra ngôn ngữ, tên, trạng thái; nguồn luôn là human', async () => {

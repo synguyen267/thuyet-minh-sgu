@@ -131,79 +131,67 @@ export async function logTrack(pos) {
   } catch { /* bỏ qua */ }
 }
 
-// ---------- Quản trị (chỉ thành công khi đăng nhập bằng tài khoản admin) ----------
+// ---------- Quản trị: đi qua backend /api (controller, service, repository) ----------
+// Backend kiểm tra quyền admin và dữ liệu, rồi mới ghi vào Supabase bằng chính token của người dùng.
 function check(error) {
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(error.message); // dùng cho Storage
 }
 
+/** Gọi backend kèm token đăng nhập. Trả về phần result của câu trả lời, lỗi thì ném Error với câu tiếng Việt từ backend. */
+async function api(path, { method = 'GET', body } = {}) {
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+  if (!token) throw new Error('Hãy đăng nhập lại bằng tài khoản quản trị.');
+  let res;
+  try {
+    res = await fetch(`/api${path}`, {
+      method,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch {
+    throw new Error('Không kết nối được máy chủ. Hãy kiểm tra mạng rồi thử lại.');
+  }
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(json.error || (res.status === 504 ? 'Máy chủ phản hồi quá lâu. Hãy bấm thử lại.' : `Lỗi ${res.status}`));
+  }
+  return json.result;
+}
+
+const poiPath = (id) => `/pois/${encodeURIComponent(id)}`;
+
 export async function savePoi(id, fields) {
-  const { error } = await supabase.from('poi').update(fields).eq('id', id);
-  check(error);
+  await api(poiPath(id), { method: 'PATCH', body: fields });
 }
 
 export async function saveTranslation(poi_id, lang, fields) {
-  const { error } = await supabase
-    .from('poi_translation')
-    .upsert({ poi_id, lang, ...fields }, { onConflict: 'poi_id,lang' });
-  check(error);
+  const { name, tts_script, audio_url, status } = fields;
+  await api(`${poiPath(poi_id)}/translations/${encodeURIComponent(lang)}`, { method: 'PUT', body: { name, tts_script, audio_url, status } });
 }
 
 export async function fetchStats() {
-  const [top, avg, plays, tracks, heat] = await Promise.all([
-    supabase.from('v_top_pois').select('*'),
-    supabase.from('v_avg_listen').select('*'),
-    supabase.from('play_log').select('*', { count: 'exact', head: true }),
-    supabase.from('location_track').select('*', { count: 'exact', head: true }),
-    supabase.from('v_heat').select('*').order('hits', { ascending: false }).limit(10),
-  ]);
-  for (const r of [top, avg, plays, tracks, heat]) check(r.error);
-  return { top: top.data, avg: avg.data, totalPlays: plays.count ?? 0, totalTracks: tracks.count ?? 0, heat: heat.data };
+  return api('/stats');
 }
 
-/**
- * Toàn bộ ô vị trí của view v_heat để vẽ bản đồ nhiệt (Supabase trả tối đa 1000 dòng mỗi lần nên đọc từng trang).
- * Sắp theo số lượt giảm dần; chỉ lấy tối đa maxRows ô nhiều nhất.
- */
+/** Các ô vị trí của view v_heat để vẽ bản đồ nhiệt (backend đọc từng trang, tối đa maxRows ô nhiều nhất). */
 export async function fetchHeat(maxRows = 5000) {
-  const rows = [];
-  for (let from = 0; from < maxRows; from += 1000) {
-    const { data, error } = await supabase
-      .from('v_heat')
-      .select('lat, lng, hits')
-      .order('hits', { ascending: false })
-      .order('lat')
-      .order('lng')
-      .range(from, from + 999);
-    check(error);
-    rows.push(...(data ?? []));
-    if (!data || data.length < 1000) break;
-  }
-  return rows;
+  return api(`/stats/heat?max=${encodeURIComponent(maxRows)}`);
 }
 
 // ---------- Thêm / xóa điểm (quản trị) ----------
 /** Tạo điểm mới ở trạng thái ẨN (khách chưa thấy) kèm tên tiếng Việt dạng bản nháp. */
 export async function createPoi({ id, name_vi, tour_order, radius_m, priority }) {
-  const { error } = await supabase.from('poi').insert({ id, tour_order, radius_m, priority, is_active: false });
-  check(error);
-  const { error: e2 } = await supabase
-    .from('poi_translation')
-    .insert({ poi_id: id, lang: 'vi', name: name_vi, status: 'draft', source: 'human' });
-  if (e2) {
-    await supabase.from('poi').delete().eq('id', id); // hoàn tác để không để lại điểm mồ côi
-    check(e2);
-  }
+  await api('/pois', { method: 'POST', body: { id, name_vi, tour_order, radius_m, priority } });
 }
 
 export async function countPlays(id) {
-  const { count, error } = await supabase.from('play_log').select('*', { count: 'exact', head: true }).eq('poi_id', id);
-  check(error);
-  return count ?? 0;
+  return (await api(`${poiPath(id)}/plays`)).plays;
 }
 
+/** Backend chỉ cho xóa điểm chưa có lượt nghe (BR-15); điểm đã có lượt nghe thì trả lỗi 409. */
 export async function deletePoi(id) {
-  const { error } = await supabase.from('poi').delete().eq('id', id);
-  check(error);
+  await api(poiPath(id), { method: 'DELETE' });
 }
 
 // ---------- Tải ảnh / audio lên Storage (quản trị) ----------
@@ -225,23 +213,14 @@ export async function uploadMedia(file, folder) {
   return data.publicUrl;
 }
 
+
 // ---------- AI soạn nháp và dịch (quản trị) ----------
 /**
- * Gọi hàm máy chủ /api/ai (khóa Gemini nằm trên Vercel). Gửi kèm token đăng nhập để máy chủ kiểm tra là admin.
- * payload: { action: 'draft', name, notes } hoặc { action: 'translate', name, text, targets }.
+ * Gọi dịch vụ AI của backend. payload: { action: 'draft', name, notes } hoặc { action: 'translate', name, text, targets }.
+ * Khóa Gemini chỉ nằm trên máy chủ.
  */
 export async function callAi(payload) {
-  const { data } = await supabase.auth.getSession();
-  const token = data?.session?.access_token;
-  if (!token) throw new Error('Hãy đăng nhập lại bằng tài khoản quản trị.');
-  const res = await fetch('/api/ai', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify(payload),
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(json.error || (res.status === 504 ? 'Máy chủ AI phản hồi quá lâu. Hãy bấm thử lại.' : `Lỗi ${res.status}`));
-  }
-  return json.result;
+  const { action, ...body } = payload ?? {};
+  if (!['draft', 'translate'].includes(action)) throw new Error('Yêu cầu AI không hợp lệ.');
+  return api(`/ai/${action}`, { method: 'POST', body });
 }
