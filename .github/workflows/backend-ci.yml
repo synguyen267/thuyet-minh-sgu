@@ -1,0 +1,49 @@
+name: Backend CI
+
+# Kiểm thử backend (apps/web/server). Mỗi dịch vụ một job riêng nên biết ngay dịch vụ nào hỏng.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/server/**'
+      - 'apps/web/api/**'
+      - 'apps/web/vercel.json'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    paths:
+      - 'apps/web/server/**'
+      - 'apps/web/api/**'
+      - 'apps/web/vercel.json'
+      - '.github/workflows/backend-ci.yml'
+
+jobs:
+  services:
+    name: Kiểm thử dịch vụ ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [poi, ai, stats]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Kiểm thử service và các lớp của dịch vụ ${{ matrix.service }}
+        working-directory: apps/web
+        run: node --test server/__tests__/${{ matrix.service }}.service.test.js
+
+  integration:
+    name: Kiểm thử ghép các tầng (HTTP, Supabase giả)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - working-directory: apps/web
+        run: node --test server/__tests__/app.test.js server/__tests__/integration.test.js server/__tests__/service-apps.test.js

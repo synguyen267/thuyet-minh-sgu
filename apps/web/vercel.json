@@ -1,6 +1,8 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/api/pois/:path*", "destination": "/api/poi" },
+    { "source": "/api/ai/:path*", "destination": "/api/ai" },
+    { "source": "/api/stats/:path*", "destination": "/api/analytics" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "functions": { "api/*.js": { "maxDuration": 60 } }

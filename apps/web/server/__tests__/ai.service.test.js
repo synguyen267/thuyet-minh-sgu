@@ -50,7 +50,7 @@ test('gemini: model không nhận thinking thì thử lại không có; lỗi 50
     { ok: false, status: 503, json: async () => ({}) },
     { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: '```json\n{"a":1}\n```' }] } }] }) },
   ];
-  const g = createGemini({ apiKey: 'k', model: 'm', retryDelayMs: 1, fetchFn: async (url, opts) => { bodies.push(JSON.parse(opts.body)); return replies.shift(); } });
+  const g = createGemini({ apiKey: 'k', model: 'm', retryDelaysMs: [1, 1], fetchFn: async (url, opts) => { bodies.push(JSON.parse(opts.body)); return replies.shift(); } });
   assert.deepEqual(await g.generateJson('s', 'u'), { a: 1 });
   assert.equal(bodies.length, 3);
   assert.ok(bodies[0].generationConfig.thinkingConfig);
@@ -60,4 +60,28 @@ test('gemini: model không nhận thinking thì thử lại không có; lỗi 50
 test('gemini: thiếu khóa thì báo 500 rõ ràng', async () => {
   const g = createGemini({ apiKey: undefined, model: 'm' });
   await assert.rejects(g.generateJson('s', 'u'), (e) => e.status === 500 && /GEMINI_API_KEY/.test(e.message));
+});
+
+test('gemini: quá tải kéo dài thì thử lại hai lần rồi báo tiếng Việt, không lộ câu tiếng Anh của Google', async () => {
+  let n = 0;
+  const busy = async () => { n += 1; return { ok: false, status: 503, json: async () => ({ error: { message: 'This model is currently experiencing high demand.' } }) }; };
+  const g = createGemini({ apiKey: 'k', model: 'm', retryDelaysMs: [1, 1], fetchFn: busy });
+  await assert.rejects(g.generateJson('s', 'u'), (e) => e.status === 502 && /quá tải/.test(e.message) && !/high demand/.test(e.message));
+  assert.equal(n, 3);
+});
+
+test('gemini: các mã lỗi khác có thông báo tiếng Việt riêng', async () => {
+  const fail = (status) => createGemini({ apiKey: 'k', model: 'gemini-x', retryDelaysMs: [1, 1], fetchFn: async () => ({ ok: false, status, json: async () => ({ error: { message: 'raw' } }) }) });
+  await assert.rejects(fail(429).generateJson('s', 'u'), /một phút/);
+  await assert.rejects(fail(403).generateJson('s', 'u'), /GEMINI_API_KEY/);
+  await assert.rejects(fail(404).generateJson('s', 'u'), /GEMINI_MODEL/);
+});
+
+test('gemini: lỗi tạm thời rồi thành công thì trả kết quả, không báo lỗi', async () => {
+  const replies = [
+    { ok: false, status: 503, json: async () => ({}) },
+    { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: '{"ok":true}' }] } }] }) },
+  ];
+  const g = createGemini({ apiKey: 'k', model: 'm', retryDelaysMs: [1, 1], fetchFn: async () => replies.shift() });
+  assert.deepEqual(await g.generateJson('s', 'u'), { ok: true });
 });

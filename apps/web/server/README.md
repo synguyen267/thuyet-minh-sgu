@@ -12,17 +12,21 @@ Chạy dạng hàm serverless trên Vercel qua `api/index.js`, hoặc như một
 
 Các lớp được ghép ở một chỗ duy nhất, `index.js`. Nhờ vậy mỗi lớp thay riêng được và kiểm thử bằng đối tượng giả (`__tests__/`).
 
-## Ba dịch vụ (service)
+## Ba dịch vụ độc lập (service)
 
-- **POI**: thêm, sửa, lưu bản dịch, đếm lượt nghe, xóa điểm.
-- **AI**: soạn nháp và dịch bằng Gemini (khóa chỉ nằm ở biến môi trường).
-- **Analytics**: thống kê và dữ liệu bản đồ nhiệt.
+| Dịch vụ | Hàm Vercel | Ghép các tầng ở | Địa chỉ sức khỏe |
+|---|---|---|---|
+| **POI** (thêm, sửa, bản dịch, đếm lượt nghe, xóa) | `api/poi.js` | `server/composition/poi.js` | `/api/pois/health` |
+| **AI** (soạn nháp, dịch bằng Gemini) | `api/ai.js` | `server/composition/ai.js` | `/api/ai/health` |
+| **Analytics** (thống kê, bản đồ nhiệt) | `api/analytics.js` | `server/composition/analytics.js` | `/api/stats/health` |
+
+Mỗi dịch vụ là một ứng dụng Express riêng chỉ có đường dẫn của mình, tự kiểm tra quyền admin, và chỉ nạp những gì nó cần. Nhờ vậy dịch vụ AI chậm hoặc lỗi (Google quá tải, thiếu khóa) không làm hỏng dịch vụ POI. `vercel.json` chuyển `/api/pois/...`, `/api/ai/...`, `/api/stats/...` tới đúng hàm. Các dịch vụ giao tiếp với giao diện qua REST; `server/index.js` có bản gộp cả ba cho chạy ở máy (`node server/start.js`).
 
 ## Các địa chỉ (REST)
 
 | Phương thức | Đường dẫn | Quyền |
 |---|---|---|
-| GET | `/api/health` | mọi người |
+| GET | `/api/pois/health`, `/api/ai/health`, `/api/stats/health` | mọi người |
 | POST | `/api/pois` | admin |
 | PATCH | `/api/pois/:id` | admin |
 | PUT | `/api/pois/:id/translations/:lang` | admin |
@@ -37,4 +41,4 @@ Gửi kèm tiêu đề `Authorization: Bearer <token đăng nhập Supabase>`. B
 
 ## Kiểm thử
 
-Trong `apps/web`: `npm run test:server` (dùng bộ kiểm thử có sẵn của Node, không cần cài thêm).
+Trong `apps/web`: `npm run test:server` (dùng bộ kiểm thử có sẵn của Node, không cần cài thêm). Trên GitHub, `.github/workflows/backend-ci.yml` chạy kiểm thử riêng cho từng dịch vụ và một job kiểm thử ghép các tầng.
